@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Clock,
   MapPin,
-  CheckCircle2
+  CheckCircle2,
+  Layers
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -76,16 +77,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .reduce((sum, t) => sum + t.amount, 0);
 
   const currentBalance = totalMasuk - totalKeluar;
-
-  // Monthly breakdown (Jan, Feb, Mar, Apr, May, Jun, etc.)
-  const monthlyCashflowData = [
-    { month: 'Jan', masuk: 5280000, keluar: 0 },
-    { month: 'Feb', masuk: 1730000, keluar: 950000 },
-    { month: 'Mar', masuk: 3740000, keluar: 850000 },
-    { month: 'Apr', masuk: 0, keluar: 0 },
-    { month: 'Mei', masuk: 0, keluar: 0 },
-    { month: 'Jun', masuk: 0, keluar: 0 },
-  ];
 
   // Recalculate dynamic monthly data from transactions
   const monthMap: { [key: string]: { masuk: number; keluar: number } } = {};
@@ -154,7 +145,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const rate = divRecords.length > 0 ? Math.round((divHadir / divRecords.length) * 100) : 0;
     return {
       division: shortDivName,
-      rate: rate || 85,
+      rate: rate,
     };
   });
 
@@ -198,7 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center justify-start md:justify-end gap-2.5 sm:gap-3 md:ml-auto shrink-0 pt-2 md:pt-0">
             <button
               onClick={onOpenSelfCheckIn}
               className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -301,6 +292,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
+      </div>
+
+      {/* 10 Sekbid OSIS Portal Banner */}
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-5 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-start space-x-3.5">
+          <div className="p-3 bg-white/10 rounded-xl border border-white/20 backdrop-blur-xs shrink-0">
+            <Layers className="w-6 h-6 text-indigo-300" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-slate-950">
+                Fitur Baru
+              </span>
+              <span className="text-xs font-semibold text-indigo-200">Struktur Pengurus OSIS</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+              Struktur & Program Kerja 10 Sekbid OSIS
+            </h3>
+            <p className="text-xs text-slate-300 mt-0.5 max-w-xl">
+              Manajemen struktur lengkap Sekbid 1 s.d. Sekbid 10 dengan rincian Ketua, Wakil Ketua, Anggota, tugas khusus, dan program kerja unggulan.
+            </p>
+          </div>
+        </div>
+        <button
+          id="btn-goto-sekbid-dashboard"
+          onClick={() => setActiveTab('sekbid')}
+          className="px-4 py-2.5 bg-white hover:bg-slate-100 text-indigo-900 rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center space-x-1.5 shrink-0 self-stretch md:self-auto justify-center"
+        >
+          <span>Buka 10 Sekbid</span>
+          <ChevronRight className="w-4 h-4 text-indigo-700" />
+        </button>
       </div>
 
       {/* Active Event Banner (If any) */}

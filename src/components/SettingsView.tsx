@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   Save, 
@@ -12,9 +12,24 @@ import {
   FileSpreadsheet,
   ExternalLink,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  UserPlus,
+  KeyRound,
+  Trash2,
+  Edit2,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { OrganizationConfig } from '../types';
+import { 
+  getAdminAccounts, 
+  addAdminAccount, 
+  updateAdminAccount, 
+  deleteAdminAccount, 
+  AdminAccount 
+} from '../services/authService';
 
 interface SettingsViewProps {
   config: OrganizationConfig;
@@ -43,6 +58,103 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const [formData, setFormData] = useState<OrganizationConfig>({ ...config });
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Admin Accounts State
+  const [accounts, setAccounts] = useState<AdminAccount[]>([]);
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  
+  // Account Form state
+  const [accEmail, setAccEmail] = useState('');
+  const [accPassword, setAccPassword] = useState('');
+  const [accDisplayName, setAccDisplayName] = useState('');
+  const [accRole, setAccRole] = useState('Anggota Pengurus');
+  const [accShowPass, setAccShowPass] = useState(false);
+  const [accError, setAccError] = useState<string | null>(null);
+  const [accSuccess, setAccSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAccounts(getAdminAccounts());
+  }, []);
+
+  const refreshAccounts = () => {
+    setAccounts(getAdminAccounts());
+  };
+
+  const handleOpenAddAccount = () => {
+    setEditingAccountId(null);
+    setAccEmail('');
+    setAccPassword('');
+    setAccDisplayName('');
+    setAccRole('Anggota Pengurus');
+    setAccError(null);
+    setAccSuccess(null);
+    setShowAddAccountModal(true);
+  };
+
+  const handleOpenEditAccount = (acc: AdminAccount) => {
+    setEditingAccountId(acc.id);
+    setAccEmail(acc.email);
+    setAccPassword(acc.password);
+    setAccDisplayName(acc.displayName);
+    setAccRole(acc.role);
+    setAccError(null);
+    setAccSuccess(null);
+    setShowAddAccountModal(true);
+  };
+
+  const handleSaveAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccError(null);
+
+    if (!accEmail.trim() || !accEmail.includes('@')) {
+      setAccError('Masukkan alamat email yang valid.');
+      return;
+    }
+    if (!accPassword.trim() || accPassword.length < 4) {
+      setAccError('Kata sandi minimal 4 karakter.');
+      return;
+    }
+    if (!accDisplayName.trim()) {
+      setAccError('Nama lengkap pengurus wajib diisi.');
+      return;
+    }
+
+    if (editingAccountId) {
+      updateAdminAccount(editingAccountId, {
+        email: accEmail.trim().toLowerCase(),
+        password: accPassword.trim(),
+        displayName: accDisplayName.trim(),
+        role: accRole,
+      });
+      setAccSuccess('Akun pengurus berhasil diperbarui!');
+    } else {
+      addAdminAccount({
+        email: accEmail.trim().toLowerCase(),
+        password: accPassword.trim(),
+        displayName: accDisplayName.trim(),
+        role: accRole,
+      });
+      setAccSuccess('Akun pengurus baru berhasil dibuat!');
+    }
+
+    refreshAccounts();
+    setTimeout(() => {
+      setShowAddAccountModal(false);
+      setAccSuccess(null);
+    }, 1200);
+  };
+
+  const handleDeleteAccount = (acc: AdminAccount) => {
+    if (acc.email === 'admin@osis.sch.id' && accounts.length <= 1) {
+      alert('Tidak dapat menghapus akun Administrator utama.');
+      return;
+    }
+    if (confirm(`Hapus akun login ${acc.displayName} (${acc.email})?`)) {
+      deleteAdminAccount(acc.id);
+      refreshAccounts();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -358,6 +470,211 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       </form>
 
+      {/* Section: Akun Pengurus & Administrator */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              <span>Manajemen Akun Login Pengurus (Dibuat oleh Administrator)</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Kelola daftar email dan kata sandi resmi untuk pengurus OSIS login ke sistem.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            id="btn-settings-add-account"
+            onClick={handleOpenAddAccount}
+            className="inline-flex items-center px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0 space-x-1.5"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Tambah Akun Pengurus</span>
+          </button>
+        </div>
+
+        {/* Accounts Table / List */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-100 text-xs">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-2xs">
+                <th className="px-4 py-2.5 text-left">Nama Pengurus</th>
+                <th className="px-4 py-2.5 text-left">Email Login</th>
+                <th className="px-4 py-2.5 text-left">Jabatan</th>
+                <th className="px-4 py-2.5 text-left">Kata Sandi</th>
+                <th className="px-4 py-2.5 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {accounts.map((acc) => (
+                <tr key={acc.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="px-4 py-3 font-bold text-slate-800">
+                    {acc.displayName}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-slate-600">
+                    {acc.email}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      {acc.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-slate-600">
+                    <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                      {acc.password}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditAccount(acc)}
+                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      title="Edit Akun"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAccount(acc)}
+                      className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Hapus Akun"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Account Modal (Add / Edit) */}
+      {showAddAccountModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-base text-slate-900">
+                  {editingAccountId ? 'Edit Akun Pengurus' : 'Tambah Akun Pengurus Baru'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddAccountModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {accError && (
+              <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                <span>{accError}</span>
+              </div>
+            )}
+
+            {accSuccess && (
+              <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs flex items-start space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <span>{accSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveAccount} className="space-y-3.5 mt-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nama Lengkap Pengurus *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={accDisplayName}
+                  onChange={(e) => setAccDisplayName(e.target.value)}
+                  placeholder="Contoh: Muhammad Farhan"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Jabatan / Posisi *
+                </label>
+                <select
+                  value={accRole}
+                  onChange={(e) => setAccRole(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                >
+                  <option value="Administrator (Ketua Umum OSIS)">👑 Administrator (Ketua Umum OSIS)</option>
+                  <option value="Wakil Ketua OSIS">🤝 Wakil Ketua OSIS</option>
+                  <option value="Sekretaris Umum">📝 Sekretaris Umum</option>
+                  <option value="Bendahara Umum">💰 Bendahara Umum</option>
+                  <option value="Ketua Sekbid">⭐ Ketua Sekbid</option>
+                  <option value="Anggota Pengurus">👤 Anggota Pengurus</option>
+                  <option value="Pembina OSIS">🎓 Pembina OSIS</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Email Login *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={accEmail}
+                  onChange={(e) => setAccEmail(e.target.value)}
+                  placeholder="email@osis.sch.id"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Kata Sandi (Password) *
+                </label>
+                <div className="relative">
+                  <input
+                    type={accShowPass ? 'text' : 'password'}
+                    required
+                    value={accPassword}
+                    onChange={(e) => setAccPassword(e.target.value)}
+                    placeholder="Minimal 4 karakter..."
+                    className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAccShowPass(!accShowPass)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  >
+                    {accShowPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddAccountModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs"
+                >
+                  {editingAccountId ? 'Simpan Perubahan' : 'Buat Akun'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Section 4: Data Backup, Restore & Reset */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider pb-2 border-b border-slate-100">
@@ -402,9 +719,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (confirm('Apakah Anda yakin ingin mengatur ulang data ke data demo bawaan (HIMA-IF)?')) {
+              if (confirm('Apakah Anda yakin ingin mengosongkan semua data dummy lokal dan beralih ke database bersih OSIS murni?')) {
                 onResetDemoData();
-                alert('Data berhasil di-reset ke data bawaan.');
               }
             }}
             className="p-4 bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-left flex flex-col justify-between space-y-3 transition-colors"
@@ -413,8 +729,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <RotateCcw className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-bold text-xs">Reset ke Contoh Bawaan</p>
-              <p className="text-2xs text-slate-500 mt-0.5">Kembalikan data sampel organisasi</p>
+              <p className="font-bold text-xs">Kosongkan Data (Database Murni)</p>
+              <p className="text-2xs text-slate-500 mt-0.5">Bersihkan dummy & gunakan database kosong</p>
             </div>
           </button>
 

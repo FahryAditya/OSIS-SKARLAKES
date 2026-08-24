@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   ActiveTab, 
   OrganizationConfig, 
@@ -36,14 +36,31 @@ import { SelfCheckInModal } from './components/SelfCheckInModal';
 import { QuickTransactionModal } from './components/QuickTransactionModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { GoogleSheetsSyncModal } from './components/GoogleSheetsSyncModal';
-import { initAuth, logoutGoogle } from './services/googleAuth';
+import { AuthModal } from './components/AuthModal';
+import { LoginView } from './components/LoginView';
+import { 
+  FeedbackNotification, 
+  FeedbackToastItem, 
+  ActionFeedbackModalData, 
+  FeedbackType, 
+  playActionFeedbackSound, 
+  triggerConfettiBurst 
+} from './components/FeedbackNotification';
+import { initAuth, logoutUser, getCurrentStoredSession } from './services/authService';
 import { 
   SpreadsheetInfo, 
   SpreadsheetDataPayload, 
   appendTransactionToSheet, 
-  appendAttendanceToSheet 
+  appendAttendanceToSheet,
+  DEFAULT_APPS_SCRIPT_URL,
+  syncViaAppsScript,
+  fetchViaAppsScript,
+  syncAllToSpreadsheet,
+  fetchDataFromSpreadsheet
 } from './services/googleSheetsService';
 import { User } from 'firebase/auth';
+import { formatRupiah } from './utils/formatters';
+import { RefreshCw, UploadCloud, FileSpreadsheet } from 'lucide-react';
 
 const STORAGE_KEYS = {
   CONFIG: 'org_app_config_v1',
@@ -58,10 +75,56 @@ const STORAGE_KEYS = {
   CONNECTED_SHEET: 'org_app_connected_sheet_v1',
   LAST_SYNCED: 'org_app_last_synced_v1',
   AUTO_SYNC: 'org_app_autosync_v1',
+  GAS_URL: 'org_app_gas_url_v1',
+  DB_VERSION: 'org_app_pure_db_v2',
 };
 
+// Automatic cleanup of legacy demo data on load
+function checkAndCleanLegacyDummyData() {
+  const version = localStorage.getItem(STORAGE_KEYS.DB_VERSION);
+  if (version !== 'v2_pure_sheets') {
+    const rawMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
+    if (rawMembers && (rawMembers.includes('m-01') || rawMembers.includes('Fahry') || rawMembers.includes('HIMA-IF'))) {
+      localStorage.removeItem(STORAGE_KEYS.MEMBERS);
+    }
+    const rawSekbidMembers = localStorage.getItem(STORAGE_KEYS.SEKBID_MEMBERS);
+    if (rawSekbidMembers && rawSekbidMembers.includes('sm-01')) {
+      localStorage.removeItem(STORAGE_KEYS.SEKBID_MEMBERS);
+    }
+    const rawEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
+    if (rawEvents && rawEvents.includes('evt-01')) {
+      localStorage.removeItem(STORAGE_KEYS.EVENTS);
+    }
+    const rawAtt = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
+    if (rawAtt && rawAtt.includes('att-1-1')) {
+      localStorage.removeItem(STORAGE_KEYS.ATTENDANCE);
+    }
+    const rawTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+    if (rawTx && rawTx.includes('tx-')) {
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    }
+    const rawDues = localStorage.getItem(STORAGE_KEYS.DUES);
+    if (rawDues && (rawDues.includes('due-m-01') || rawDues.includes('amount":20000'))) {
+      localStorage.removeItem(STORAGE_KEYS.DUES);
+    }
+    const rawBudget = localStorage.getItem(STORAGE_KEYS.BUDGET);
+    if (rawBudget && rawBudget.includes('rab-01')) {
+      localStorage.removeItem(STORAGE_KEYS.BUDGET);
+    }
+    const rawConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
+    if (rawConfig && rawConfig.includes('HIMA-IF')) {
+      localStorage.removeItem(STORAGE_KEYS.CONFIG);
+    }
+    localStorage.setItem(STORAGE_KEYS.DB_VERSION, 'v2_pure_sheets');
+  }
+}
+
+checkAndCleanLegacyDummyData();
+
 export default function App() {
-  // State Initialization from LocalStorage or Defaults
+  // ==========================================
+  // State Initialization from LocalStorage
+  // ==========================================
   const [config, setConfig] = useState<OrganizationConfig>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CONFIG);
     if (saved) {
@@ -129,14 +192,31 @@ export default function App() {
     return saved ? JSON.parse(saved) : initialSekbidMembers;
   });
 
-  // Google Sheets Database State
-  const [googleUser, setGoogleUser] = useState<User | null>(null);
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentStoredSession());
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Google Sheets Database State
   const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
 
   const [connectedSpreadsheet, setConnectedSpreadsheet] = useState<SpreadsheetInfo | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CONNECTED_SHEET);
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    const gasUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_APPS_SCRIPT_URL;
+    return {
+      id: 'apps-script-connected',
+      title: 'Google Spreadsheet OSIS (Cloud DB)',
+      url: gasUrl,
+      sheets: ['Info_Organisasi', 'Data_Anggota', 'Kegiatan_Presensi', 'Rekap_Presensi', 'Buku_Kas_Keuangan', 'Iuran_Kas_Bulanan', 'RAB_Anggaran'],
+      lastSynced: undefined,
+    };
   });
 
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(() => {
@@ -147,6 +227,9 @@ export default function App() {
     const saved = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  const [isPullingFromSheets, setIsPullingFromSheets] = useState(false);
+  const [isPushingToSheets, setIsPushingToSheets] = useState(false);
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -164,15 +247,81 @@ export default function App() {
     customDetails?: any;
   }>({ isOpen: false });
 
-  // Init Google Auth listener
+  // ==========================================
+  // Feedback Animations & Toast Notification System
+  // ==========================================
+  const [toasts, setToasts] = useState<FeedbackToastItem[]>([]);
+  const [actionModal, setActionModal] = useState<ActionFeedbackModalData | null>(null);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((
+    title: string, 
+    message?: string, 
+    type: FeedbackType = 'success',
+    iconType?: 'check' | 'money' | 'attendance' | 'user' | 'sheet' | 'sparkles'
+  ) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const newToast: FeedbackToastItem = {
+      id,
+      title,
+      message,
+      type,
+      iconType,
+      duration: 4000,
+    };
+    setToasts(prev => [...prev.slice(-4), newToast]);
+    playActionFeedbackSound(type);
+
+    setTimeout(() => {
+      removeToast(id);
+    }, 4500);
+  }, [removeToast]);
+
+  const triggerActionFeedback = useCallback((
+    title: string,
+    message: string,
+    options?: {
+      type?: FeedbackType;
+      badge?: string;
+      iconType?: 'check' | 'money' | 'attendance' | 'user' | 'sheet' | 'sparkles';
+      withConfetti?: boolean;
+      sound?: boolean;
+    }
+  ) => {
+    const type = options?.type || 'success';
+    setActionModal({
+      isOpen: true,
+      title,
+      message,
+      type,
+      badge: options?.badge,
+      iconType: options?.iconType,
+    });
+
+    if (options?.sound !== false) {
+      playActionFeedbackSound(type);
+    }
+
+    if (options?.withConfetti || type === 'celebrate') {
+      triggerConfettiBurst();
+    }
+
+    // Also add to toast feed
+    showToast(title, message, type, options?.iconType);
+  }, [showToast]);
+
+  // Init Auth listener on mount
   useEffect(() => {
     const unsubscribe = initAuth(
       (user, token) => {
-        setGoogleUser(user);
-        setGoogleAccessToken(token);
+        setCurrentUser(user);
+        if (token) setGoogleAccessToken(token);
       },
       () => {
-        setGoogleUser(null);
+        setCurrentUser(null);
         setGoogleAccessToken(null);
       }
     );
@@ -236,7 +385,9 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.AUTO_SYNC, JSON.stringify(isAutoSyncEnabled));
   }, [isAutoSyncEnabled]);
 
-  // Attendance Handlers
+  // ==========================================
+  // Attendance Handlers with Feedback
+  // ==========================================
   const handleRecordAttendance = (record: Omit<AttendanceRecord, 'id' | 'timestamp'>) => {
     const newRecord: AttendanceRecord = {
       ...record,
@@ -244,6 +395,18 @@ export default function App() {
       timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
     };
     setAttendanceRecords(prev => [...prev, newRecord]);
+
+    // Animated Feedback
+    triggerActionFeedback(
+      'Presensi Berhasil Dicatat!',
+      `${record.memberName} tercatat ${record.status.toUpperCase()}`,
+      {
+        type: 'celebrate',
+        iconType: 'attendance',
+        badge: 'Absensi Kegiatan',
+        withConfetti: true,
+      }
+    );
 
     // Auto-sync single record to Google Sheets if connected
     if (isAutoSyncEnabled && googleAccessToken && connectedSpreadsheet) {
@@ -254,9 +417,9 @@ export default function App() {
   };
 
   const handleUpdateRecordStatus = (eventId: string, memberId: string, status: AttendanceStatus, notes?: string) => {
+    const member = members.find(m => m.id === memberId);
     setAttendanceRecords(prev => {
       const existingIdx = prev.findIndex(r => r.eventId === eventId && r.memberId === memberId);
-      const member = members.find(m => m.id === memberId);
       if (!member) return prev;
 
       if (existingIdx >= 0) {
@@ -283,6 +446,13 @@ export default function App() {
         return [...prev, newRec];
       }
     });
+
+    showToast(
+      'Status Presensi Diperbarui',
+      `${member?.name || 'Anggota'} disetel menjadi ${status.toUpperCase()}`,
+      'success',
+      'attendance'
+    );
   };
 
   const handleCreateEvent = (eventData: Omit<AttendanceEvent, 'id' | 'qrCodeToken'>) => {
@@ -292,15 +462,40 @@ export default function App() {
       qrCodeToken: `${config.shortName}-${Date.now().toString(36).toUpperCase()}`,
     };
     setEvents(prev => [newEvent, ...prev]);
+
+    triggerActionFeedback(
+      'Sesi Kegiatan Dibuat!',
+      `Kegiatan "${newEvent.title}" dan QR Code presensi siap digunakan.`,
+      {
+        type: 'celebrate',
+        iconType: 'attendance',
+        badge: 'Kegiatan Baru',
+        withConfetti: true,
+      }
+    );
   };
 
-  // Transaction Handlers
+  // ==========================================
+  // Transaction Handlers with Feedback
+  // ==========================================
   const handleSaveTransaction = (txData: Omit<Transaction, 'id'>) => {
     const newTx: Transaction = {
       ...txData,
       id: `tx-${Date.now()}`,
     };
     setTransactions(prev => [newTx, ...prev]);
+
+    // Action animation feedback
+    triggerActionFeedback(
+      txData.type === 'masuk' ? 'Kas Masuk Berhasil Dicatat!' : 'Kas Keluar Berhasil Dicatat!',
+      `${formatRupiah(txData.amount)} • ${txData.description}`,
+      {
+        type: 'success',
+        iconType: 'money',
+        badge: txData.type === 'masuk' ? 'Pemasukan Kas' : 'Pengeluaran Kas',
+        withConfetti: txData.type === 'masuk',
+      }
+    );
 
     // Auto-sync single transaction to Google Sheets if connected
     if (isAutoSyncEnabled && googleAccessToken && connectedSpreadsheet) {
@@ -310,7 +505,9 @@ export default function App() {
     }
   };
 
-  // Dues Handlers
+  // ==========================================
+  // Dues Handlers with Feedback
+  // ==========================================
   const handlePayDues = (
     memberId: string, 
     monthsToPay: number[], 
@@ -354,6 +551,18 @@ export default function App() {
       recordedBy: config.treasurerName || 'Bendahara',
     });
 
+    // Action feedback
+    triggerActionFeedback(
+      'Pembayaran Iuran Berhasil!',
+      `${member.name} lunas iuran (${monthNames}) total ${formatRupiah(totalAmount)}`,
+      {
+        type: 'celebrate',
+        iconType: 'money',
+        badge: 'Iuran Kas OSIS',
+        withConfetti: true,
+      }
+    );
+
     // Open receipt modal immediately
     setReceiptModalData({
       isOpen: true,
@@ -369,7 +578,9 @@ export default function App() {
     });
   };
 
-  // Member Handlers
+  // ==========================================
+  // Member Handlers with Feedback
+  // ==========================================
   const handleAddMember = (memberData: Omit<Member, 'id'>) => {
     const newMember: Member = {
       ...memberData,
@@ -390,26 +601,140 @@ export default function App() {
       });
     }
     setDuesRecords(prev => [...prev, ...newDues]);
+
+    triggerActionFeedback(
+      'Anggota Berhasil Ditambahkan!',
+      `${newMember.name} (${newMember.division}) resmi terdaftar di database.`,
+      {
+        type: 'success',
+        iconType: 'user',
+        badge: 'Data Anggota',
+      }
+    );
+  };
+
+  const handleBulkAddMembers = (newMembersList: Omit<Member, 'id'>[]) => {
+    if (newMembersList.length === 0) return;
+    const baseTime = Date.now();
+    const createdMembers: Member[] = newMembersList.map((mData, idx) => ({
+      ...mData,
+      id: `m-${baseTime}-${idx}`,
+    }));
+
+    setMembers(prev => [...prev, ...createdMembers]);
+
+    // Create 12 months due records for each imported member
+    const newDues: MonthlyDuesRecord[] = [];
+    createdMembers.forEach(newMember => {
+      for (let m = 1; m <= 12; m++) {
+        newDues.push({
+          id: `due-${newMember.id}-2026-${m}`,
+          memberId: newMember.id,
+          year: 2026,
+          month: m,
+          amount: config.defaultMonthlyDue,
+          status: 'belum',
+        });
+      }
+    });
+    setDuesRecords(prev => [...prev, ...newDues]);
+
+    triggerActionFeedback(
+      'Import Data Berhasil!',
+      `Sebanyak ${createdMembers.length} data anggota/pengurus berhasil diimpor ke sistem.`,
+      {
+        type: 'celebrate',
+        withConfetti: true,
+        badge: 'Import Excel / CSV',
+      }
+    );
   };
 
   const handleUpdateMember = (id: string, updated: Partial<Member>) => {
     setMembers(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    showToast('Data Anggota Diperbarui', 'Perubahan biodata anggota berhasil disimpan', 'success', 'user');
   };
 
   const handleDeleteMember = (id: string) => {
+    const member = members.find(m => m.id === id);
     setMembers(prev => prev.filter(m => m.id !== id));
+    setDuesRecords(prev => prev.filter(d => d.memberId !== id));
+    setAttendanceRecords(prev => prev.filter(r => r.memberId !== id));
+    showToast('Anggota Dihapus', `${member?.name || 'Anggota'} telah dihapus dari daftar.`, 'info');
   };
 
-  // Budget Handler
+  const handleBulkDeleteMembers = (ids: string[], reasonTitle?: string) => {
+    if (ids.length === 0) return;
+    const idSet = new Set(ids);
+    setMembers(prev => prev.filter(m => !idSet.has(m.id)));
+    setDuesRecords(prev => prev.filter(d => !idSet.has(d.memberId)));
+    setAttendanceRecords(prev => prev.filter(r => !idSet.has(r.memberId)));
+    showToast(
+      reasonTitle || 'Anggota Berhasil Dihapus',
+      `Sebanyak ${ids.length} data anggota telah dihapus dari sistem.`,
+      'info',
+      'trash'
+    );
+  };
+
+  // ==========================================
+  // 10 Sekbid OSIS CRUD Handlers
+  // ==========================================
+  const handleAddSekbidMember = (memberData: Omit<SekbidMember, 'id'>) => {
+    const newMember: SekbidMember = {
+      ...memberData,
+      id: `sm-${Date.now()}`,
+    };
+    setSekbidMembers(prev => [...prev, newMember]);
+    showToast('Pengurus Sekbid Ditambahkan', `${newMember.name} ditambahkan ke Sekbid ${newMember.sekbidId}`, 'success');
+  };
+
+  const handleUpdateSekbidMember = (id: string, updated: Partial<SekbidMember>) => {
+    setSekbidMembers(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    showToast('Data Pengurus Sekbid Diperbarui', 'Perubahan anggota sekbid tersimpan', 'success');
+  };
+
+  const handleDeleteSekbidMember = (id: string) => {
+    setSekbidMembers(prev => prev.filter(m => m.id !== id));
+    showToast('Pengurus Sekbid Dihapus', 'Data anggota sekbid dihapus', 'info');
+  };
+
+  const handleUpdateSekbidDetail = (id: number, updated: Partial<SekbidDetail>) => {
+    setSekbidList(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+    showToast('Program Kerja Sekbid Diperbarui', `Informasi Sekbid ${id} berhasil diperbarui`, 'success');
+  };
+
+  const handleResetSekbidData = () => {
+    setSekbidList(initialSekbidList);
+    setSekbidMembers(initialSekbidMembers);
+    localStorage.removeItem(STORAGE_KEYS.SEKBID_LIST);
+    localStorage.removeItem(STORAGE_KEYS.SEKBID_MEMBERS);
+    showToast('Data Sekbid Direset', 'Struktur 10 Sekbid dikembalikan ke setelan awal OSIS', 'info');
+  };
+
+  // ==========================================
+  // Budget Handlers
+  // ==========================================
   const handleAddBudgetPlan = (plan: Omit<BudgetPlan, 'id'>) => {
     const newPlan: BudgetPlan = {
       ...plan,
       id: `rab-${Date.now()}`,
     };
     setBudgetPlans(prev => [...prev, newPlan]);
+    triggerActionFeedback(
+      'RAB Berhasil Ditambahkan!',
+      `Anggaran "${newPlan.prokerName}" sebesar ${formatRupiah(newPlan.allocatedBudget)} telah dicatat.`,
+      {
+        type: 'success',
+        iconType: 'money',
+        badge: 'RAB Anggaran',
+      }
+    );
   };
 
-  // Export / Import / Reset
+  // ==========================================
+  // Export / Import / Reset Handlers
+  // ==========================================
   const handleExportAllData = () => {
     const backupData = {
       config,
@@ -426,6 +751,7 @@ export default function App() {
     link.href = jsonString;
     link.download = `Backup_${config.shortName}_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
+    showToast('Cadangan Data Diunduh', 'File JSON cadangan database berhasil diekspor', 'success');
   };
 
   const handleImportData = (jsonData: string) => {
@@ -438,9 +764,13 @@ export default function App() {
       if (parsed.transactions) setTransactions(parsed.transactions);
       if (parsed.duesRecords) setDuesRecords(parsed.duesRecords);
       if (parsed.budgetPlans) setBudgetPlans(parsed.budgetPlans);
+      triggerActionFeedback('Data Berhasil Dipulihkan!', 'Semua data dari berkas cadangan JSON telah dimuat ke aplikasi.', {
+        type: 'celebrate',
+        withConfetti: true,
+      });
     } catch (err) {
       console.error(err);
-      alert('Format JSON tidak sesuai!');
+      showToast('Gagal Impor', 'Format berkas cadangan JSON tidak valid', 'error');
     }
   };
 
@@ -453,17 +783,17 @@ export default function App() {
     if (data.duesRecords && data.duesRecords.length > 0) setDuesRecords(data.duesRecords);
     if (data.budgetPlans && data.budgetPlans.length > 0) setBudgetPlans(data.budgetPlans);
     setLastSyncedAt(new Date().toISOString());
-  };
 
-  const handleResetDemoData = () => {
-    setConfig(initialOrganizationConfig);
-    setMembers(initialMembers);
-    setEvents(initialEvents);
-    setAttendanceRecords(initialAttendanceRecords);
-    setTransactions(initialTransactions);
-    setDuesRecords(generateInitialDues(initialMembers));
-    setBudgetPlans(initialBudgetPlans);
-    localStorage.clear();
+    triggerActionFeedback(
+      'Data Google Sheets Dimuat!',
+      'Seluruh 7 lembar kerja Google Sheets berhasil disinkronkan ke aplikasi.',
+      {
+        type: 'sync',
+        iconType: 'sheet',
+        badge: 'Cloud Sync',
+        withConfetti: true,
+      }
+    );
   };
 
   // Google Sheets Current Payload
@@ -476,6 +806,185 @@ export default function App() {
     duesRecords,
     budgetPlans,
   };
+
+  // ==========================================
+  // PURE GOOGLE SHEETS DATABASE PULL & PUSH
+  // ==========================================
+  const handlePullFromSheets = async (isAuto = false) => {
+    const gasUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_APPS_SCRIPT_URL;
+
+    try {
+      setIsPullingFromSheets(true);
+
+      let imported: Partial<SpreadsheetDataPayload> = {};
+
+      if (currentUser && googleAccessToken && connectedSpreadsheet && connectedSpreadsheet.id !== 'apps-script-connected') {
+        // Pull via Google Sheets API (OAuth)
+        imported = await fetchDataFromSpreadsheet(googleAccessToken, connectedSpreadsheet.id);
+      } else if (gasUrl) {
+        // Pull via Apps Script Webhook (No Login required)
+        imported = await fetchViaAppsScript(gasUrl);
+      }
+
+      let loadedCount = 0;
+      if (imported.config) setConfig(imported.config);
+      if (imported.members && imported.members.length > 0) {
+        setMembers(imported.members);
+        loadedCount += imported.members.length;
+      }
+      if (imported.events && imported.events.length > 0) {
+        setEvents(imported.events);
+        loadedCount += imported.events.length;
+      }
+      if (imported.attendanceRecords && imported.attendanceRecords.length > 0) {
+        setAttendanceRecords(imported.attendanceRecords);
+        loadedCount += imported.attendanceRecords.length;
+      }
+      if (imported.transactions && imported.transactions.length > 0) {
+        setTransactions(imported.transactions);
+        loadedCount += imported.transactions.length;
+      }
+      if (imported.duesRecords && imported.duesRecords.length > 0) {
+        setDuesRecords(imported.duesRecords);
+        loadedCount += imported.duesRecords.length;
+      }
+      if (imported.budgetPlans && imported.budgetPlans.length > 0) {
+        setBudgetPlans(imported.budgetPlans);
+        loadedCount += imported.budgetPlans.length;
+      }
+
+      const now = new Date().toISOString();
+      setLastSyncedAt(now);
+
+      if (!isAuto) {
+        triggerActionFeedback(
+          'Data Google Sheets Termutakhir Dimuat!',
+          loadedCount > 0 
+            ? `Berhasil menarik ${loadedCount} data dari Google Spreadsheet.` 
+            : 'Sinkronisasi berhasil (Spreadsheet dalam kondisi bersih/kosong).',
+          {
+            type: 'sync',
+            iconType: 'sheet',
+            badge: 'Tarik Cloud',
+            withConfetti: true,
+          }
+        );
+      } else {
+        showToast('Sinkronisasi Otomatis', 'Data cloud Google Sheets siap digunakan', 'success', 'sheet');
+      }
+    } catch (err: any) {
+      console.warn('Pull from sheets failed:', err);
+      if (!isAuto) {
+        showToast('Gagal Menarik Data', err.message || 'Periksa koneksi Google Spreadsheet / Apps Script', 'error');
+      }
+    } finally {
+      setIsPullingFromSheets(false);
+    }
+  };
+
+  const handlePushToSheets = async () => {
+    const gasUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_APPS_SCRIPT_URL;
+
+    try {
+      setIsPushingToSheets(true);
+
+      if (currentUser && googleAccessToken && connectedSpreadsheet && connectedSpreadsheet.id !== 'apps-script-connected') {
+        // Push via Google Sheets API (OAuth)
+        await syncAllToSpreadsheet(googleAccessToken, connectedSpreadsheet.id, currentDataPayload);
+      } else if (gasUrl) {
+        // Push via Apps Script Webhook
+        await syncViaAppsScript(gasUrl, currentDataPayload);
+      }
+
+      const now = new Date().toISOString();
+      setLastSyncedAt(now);
+
+      triggerActionFeedback(
+        'Database Google Sheets Berhasil Disinkronkan!',
+        'Seluruh lembar kerja (Info, Anggota, Absensi, Kas, Iuran, RAB) telah diperbarui di Google Spreadsheet.',
+        {
+          type: 'celebrate',
+          iconType: 'sheet',
+          badge: 'Sinkronisasi Penuh',
+          withConfetti: true,
+        }
+      );
+    } catch (err: any) {
+      console.error('Push to sheets failed:', err);
+      showToast('Gagal Sinkronisasi', err.message || 'Gagal mengirim data ke Google Spreadsheet', 'error');
+    } finally {
+      setIsPushingToSheets(false);
+    }
+  };
+
+  // Initial pull from Google Sheets on component mount
+  const hasPulledOnMount = useRef(false);
+  useEffect(() => {
+    if (!hasPulledOnMount.current) {
+      hasPulledOnMount.current = true;
+      handlePullFromSheets(true);
+    }
+  }, []);
+
+  const handleResetDemoData = () => {
+    setConfig(initialOrganizationConfig);
+    setMembers([]);
+    setEvents([]);
+    setAttendanceRecords([]);
+    setTransactions([]);
+    setDuesRecords([]);
+    setBudgetPlans([]);
+    setSekbidMembers([]);
+    setSekbidList(initialSekbidList);
+    localStorage.clear();
+    localStorage.setItem(STORAGE_KEYS.DB_VERSION, 'v2_pure_sheets');
+    showToast('Database Bersih Murni Aktif', 'Semua dummy data telah dibersihkan. Aplikasi siap menggunakan Google Sheets.', 'info');
+  };
+
+  // Auth Logout
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      setCurrentUser(null);
+      setGoogleAccessToken(null);
+      setIsAuthModalOpen(false);
+      showToast('Berhasil Keluar', 'Sesi login Anda telah diakhiri. Silakan masuk kembali.', 'info');
+    } catch (e: any) {
+      console.error(e);
+      setCurrentUser(null);
+      setGoogleAccessToken(null);
+    }
+  };
+
+  // If user is not logged in / logged out -> Show dedicated Login Page directly
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+        <LoginView
+          config={config}
+          onLoginSuccess={(user, token) => {
+            setCurrentUser(user);
+            if (token) setGoogleAccessToken(token);
+          }}
+          onTriggerFeedback={(title, message, type) => {
+            triggerActionFeedback(title, message, {
+              type: type || 'celebrate',
+              withConfetti: true,
+              badge: 'Portal Akun OSIS',
+            });
+          }}
+        />
+
+        {/* Global Feedback Notifications & Toasts */}
+        <FeedbackNotification
+          toasts={toasts}
+          onRemoveToast={removeToast}
+          actionModal={actionModal}
+          onCloseActionModal={() => setActionModal(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -492,8 +1001,70 @@ export default function App() {
         }}
         onOpenGoogleSheetsSync={() => setIsGoogleSheetsModalOpen(true)}
         isGoogleSheetsConnected={Boolean(connectedSpreadsheet)}
-        isGoogleSignedIn={Boolean(googleUser && googleAccessToken)}
+        isGoogleSignedIn={Boolean(currentUser && googleAccessToken)}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
       />
+
+      {/* Pure Google Sheets Database Quick Control Bar */}
+      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 text-white border-b border-emerald-500/20 py-2.5 px-4 sm:px-6 lg:px-8 no-print">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <div className="flex items-center space-x-2.5 text-xs">
+            <span className="flex h-2.5 w-2.5 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <div className="flex items-center space-x-1.5 flex-wrap">
+              <span className="font-bold text-emerald-300">Database Google Sheets Murni Aktif:</span>
+              <span className="text-slate-300 truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
+                {connectedSpreadsheet?.title || 'Spreadsheet Cloud OSIS'}
+              </span>
+              {lastSyncedAt && (
+                <span className="text-2xs text-slate-400">
+                  (Sinkron: {new Date(lastSyncedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0">
+            <button
+              type="button"
+              id="btn-quick-pull-sheets"
+              onClick={() => handlePullFromSheets(false)}
+              disabled={isPullingFromSheets}
+              className="inline-flex items-center px-2.5 py-1 bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-2xs"
+              title="Tarik data terbaru dari Google Sheets"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isPullingFromSheets ? 'animate-spin text-emerald-300' : ''}`} />
+              <span>{isPullingFromSheets ? 'Menarik Data...' : 'Tarik Data'}</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-quick-push-sheets"
+              onClick={handlePushToSheets}
+              disabled={isPushingToSheets}
+              className="inline-flex items-center px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-2xs"
+              title="Kirim dan sinkronkan semua perubahan ke Google Sheets"
+            >
+              <UploadCloud className={`w-3.5 h-3.5 mr-1.5 ${isPushingToSheets ? 'animate-bounce text-slate-950' : ''}`} />
+              <span>{isPushingToSheets ? 'Menyimpan...' : 'Sinkronkan'}</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-quick-manage-sheets"
+              onClick={() => setIsGoogleSheetsModalOpen(true)}
+              className="inline-flex items-center px-2 py-1 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors"
+              title="Pengaturan Google Sheets"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Main App Content View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -525,6 +1096,21 @@ export default function App() {
                 },
               });
             }}
+          />
+        )}
+
+        {activeTab === 'sekbid' && (
+          <SekbidView
+            sekbidList={sekbidList}
+            members={sekbidMembers}
+            config={config}
+            onAddMember={handleAddSekbidMember}
+            onUpdateMember={handleUpdateSekbidMember}
+            onDeleteMember={handleDeleteSekbidMember}
+            onUpdateSekbid={handleUpdateSekbidDetail}
+            onResetData={handleResetSekbidData}
+            onSyncSheets={handlePushToSheets}
+            isSyncing={isPushingToSheets}
           />
         )}
 
@@ -605,6 +1191,8 @@ export default function App() {
             events={events}
             config={config}
             onAddMember={handleAddMember}
+            onBulkAddMembers={handleBulkAddMembers}
+            onBulkDeleteMembers={handleBulkDeleteMembers}
             onUpdateMember={handleUpdateMember}
             onDeleteMember={handleDeleteMember}
           />
@@ -613,7 +1201,13 @@ export default function App() {
         {activeTab === 'pengaturan' && (
           <SettingsView
             config={config}
-            onUpdateConfig={setConfig}
+            onUpdateConfig={(newConfig) => {
+              setConfig(newConfig);
+              triggerActionFeedback('Pengaturan Disimpan!', 'Profil dan konfigurasi organisasi telah diperbarui.', {
+                type: 'success',
+                badge: 'Pengaturan',
+              });
+            }}
             onExportAllData={handleExportAllData}
             onImportData={handleImportData}
             onResetDemoData={handleResetDemoData}
@@ -634,11 +1228,42 @@ export default function App() {
         </div>
       </footer>
 
+      {/* ========================================== */}
+      {/* GLOBAL FEEDBACK NOTIFICATIONS & TOASTS */}
+      {/* ========================================== */}
+      <FeedbackNotification
+        toasts={toasts}
+        onRemoveToast={removeToast}
+        actionModal={actionModal}
+        onCloseActionModal={() => setActionModal(null)}
+      />
+
+      {/* ========================================== */}
+      {/* AUTHENTICATION MODAL (EMAIL & PASSWORD) */}
+      {/* ========================================== */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={(user, token) => {
+          setCurrentUser(user);
+          if (token) setGoogleAccessToken(token);
+        }}
+        onTriggerFeedback={(title, message, type) => {
+          triggerActionFeedback(title, message, {
+            type: type || 'celebrate',
+            withConfetti: true,
+            badge: 'Autentikasi Akun',
+          });
+        }}
+      />
+
+      {/* ========================================== */}
       {/* MODALS */}
+      {/* ========================================== */}
       <GoogleSheetsSyncModal
         isOpen={isGoogleSheetsModalOpen}
         onClose={() => setIsGoogleSheetsModalOpen(false)}
-        currentUser={googleUser}
+        currentUser={currentUser}
         accessToken={googleAccessToken}
         connectedSpreadsheet={connectedSpreadsheet}
         lastSyncedAt={lastSyncedAt}
@@ -647,17 +1272,28 @@ export default function App() {
         onSpreadsheetConnected={(info) => {
           setConnectedSpreadsheet(info);
           setLastSyncedAt(new Date().toISOString());
+          triggerActionFeedback(
+            'Spreadsheet Terhubung & Disinkronkan!',
+            `Data tersinkronkan ke: "${info.title}"`,
+            {
+              type: 'sync',
+              iconType: 'sheet',
+              badge: 'Google Sheets',
+              withConfetti: true,
+            }
+          );
         }}
         onSpreadsheetDisconnected={() => {
           setConnectedSpreadsheet(null);
           setLastSyncedAt(null);
+          showToast('Spreadsheet Terputus', 'Koneksi Google Sheets dinonaktifkan', 'info');
         }}
         onAuthSuccess={(user, token) => {
-          setGoogleUser(user);
+          setCurrentUser(user);
           setGoogleAccessToken(token);
         }}
         onAuthLogout={() => {
-          setGoogleUser(null);
+          setCurrentUser(null);
           setGoogleAccessToken(null);
         }}
         currentDataPayload={currentDataPayload}

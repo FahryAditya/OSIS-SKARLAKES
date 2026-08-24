@@ -22,6 +22,7 @@ export interface Member {
   id: string;
   nim: string;
   name: string;
+  kelas?: string;
   division: Division;
   role: Role;
   phone: string;
