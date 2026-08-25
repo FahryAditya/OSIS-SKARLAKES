@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Absensi & Keuangan Organisasi",
+  "description": "Platform terintegrasi absensi kegiatan, rekap kehadiran, pembukuan kas umum, iuran kas anggota, dan sinkronisasi database Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
