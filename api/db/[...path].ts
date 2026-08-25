@@ -20,6 +20,11 @@ async function ensureTables() {
   await sql`CREATE TABLE IF NOT EXISTS budget_plans (id TEXT PRIMARY KEY, proker_name TEXT, division TEXT, allocated_budget NUMERIC, realized_budget NUMERIC, date TEXT, status TEXT DEFAULT 'Direncanakan', created_at TIMESTAMP DEFAULT NOW())`;
   await sql`CREATE TABLE IF NOT EXISTS sekbid_members (id TEXT PRIMARY KEY, sekbid_id INTEGER, name TEXT, nis TEXT, role TEXT, grade_class TEXT, phone TEXT, email TEXT, avatar_url TEXT, status TEXT DEFAULT 'Aktif', task_or_focus TEXT, joined_period TEXT, created_at TIMESTAMP DEFAULT NOW())`;
   await sql`CREATE TABLE IF NOT EXISTS admin_accounts (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, display_name TEXT NOT NULL, role TEXT NOT NULL, sekbid_id INTEGER, created_at TIMESTAMP DEFAULT NOW())`;
+  await sql`INSERT INTO admin_accounts (id,email,password,display_name,role) VALUES
+    ('acc-admin-01','admin@osis.sch.id','admin.osis1','Administrator OSIS','Administrator (Ketua Umum OSIS)'),
+    ('acc-bendahara-01','bendahara@osis.sch.id','bendahara123','Bendahara Umum OSIS','Bendahara Umum'),
+    ('acc-sekretaris-01','sekretaris@osis.sch.id','sekretaris123','Sekretaris Umum OSIS','Sekretaris Umum')
+    ON CONFLICT (email) DO NOTHING`;
 }
 
 let tablesReady: Promise<void> | null = null;
@@ -69,8 +74,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ status: 'ok', database: result[0]?.ok === 1 ? 'connected' : 'unexpected-response' });
     }
 
-    await ensureTablesOnce();
     const sql = getSql();
+
+    if (segment === 'auth' && (subSeg === 'login' || subSeg === 'register') && req.method === 'POST') {
+      await ensureTablesOnce();
+    }
+
+    if (segment === 'auth' && subSeg === 'login' && req.method === 'POST') {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+      if (!email || !password) return res.status(400).json({ error: 'Email dan password wajib diisi.' });
+      const accounts = await sql`SELECT id,email,display_name,role,sekbid_id FROM admin_accounts WHERE LOWER(email)=${email} AND password=${password} LIMIT 1`;
+      if (accounts.length === 0) return res.status(401).json({ error: 'Email atau kata sandi tidak cocok.' });
+      const account = accounts[0];
+      return res.json({ user: { uid: account.id, email: account.email, displayName: account.display_name, role: account.role, sekbidId: account.sekbid_id || undefined } });
+    }
+
+    if (segment === 'auth' && subSeg === 'register' && req.method === 'POST') {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+      const displayName = String(req.body?.displayName || '').trim();
+      const role = String(req.body?.role || 'Pengurus OSIS').trim();
+      if (!email || !password || !displayName) return res.status(400).json({ error: 'Nama, email, dan password wajib diisi.' });
+      const id = `acc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const inserted = await sql`INSERT INTO admin_accounts (id,email,password,display_name,role) VALUES (${id},${email},${password},${displayName},${role}) ON CONFLICT (email) DO NOTHING RETURNING id,email,display_name,role`;
+      if (inserted.length === 0) return res.status(409).json({ error: 'Email sudah terdaftar.' });
+      const account = inserted[0];
+      return res.json({ user: { uid: account.id, email: account.email, displayName: account.display_name, role: account.role } });
+    }
+
+    await ensureTablesOnce();
 
     // ── GET /api/db/data ────────────────────────────────────────────────────
     if (segment === 'data' && req.method === 'GET') {

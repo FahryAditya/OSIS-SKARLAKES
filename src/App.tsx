@@ -704,15 +704,7 @@ export default function App() {
       const now = new Date().toISOString();
       setLastSyncedAt(now);
 
-      triggerActionFeedback(
-        'Data Termutakhir NeonDB Dimuat!',
-        'Berhasil memuat seluruh data dari NeonDB PostgreSQL Cloud.',
-        {
-          type: 'sync',
-          badge: 'NeonDB Cloud',
-          withConfetti: true,
-        }
-      );
+      // Initial cloud loading is silent; only failures are shown to the user.
     } catch (err: any) {
       console.warn('Fetch from NeonDB failed:', err);
       showToast('Gagal Memuat Data', err.message || 'Gagal terhubung ke NeonDB', 'error');

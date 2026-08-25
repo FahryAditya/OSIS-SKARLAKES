@@ -156,6 +156,29 @@ function createSyntheticUser(account: AdminAccount): User {
   return syntheticUser;
 }
 
+function createApiUser(data: any): User {
+  return {
+    uid: data.uid,
+    email: data.email,
+    displayName: data.displayName,
+    role: data.role,
+    photoURL: null,
+    emailVerified: true,
+    isAnonymous: false,
+    metadata: {},
+    providerData: [],
+    refreshToken: '',
+    tenantId: null,
+    delete: async () => {},
+    getIdToken: async () => 'neondb-session',
+    getIdTokenResult: async () => ({} as any),
+    reload: async () => {},
+    toJSON: () => ({}),
+    phoneNumber: null,
+    providerId: 'password',
+  } as unknown as User;
+}
+
 export const initAuth = (
   onAuthSuccess?: (user: User, token: string | null) => void,
   onAuthFailure?: () => void
@@ -179,29 +202,27 @@ export const signInWithEmail = async (email: string, password: string): Promise<
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
 
-  // 1. Check Administrator-created local accounts
-  const adminAccounts = getAdminAccounts();
-  const matchedAdmin = adminAccounts.find(
-    a => a.email.trim().toLowerCase() === cleanEmail && a.password === cleanPassword
-  );
-
-  if (matchedAdmin) {
-    const user = createSyntheticUser(matchedAdmin);
-    setStoredSession(user);
-    return user;
+  // Administrator accounts are checked centrally in NeonDB so every device uses the same accounts.
+  try {
+    const response = await fetch('/api/db/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return createApiUser(data.user);
+    }
+  } catch (error) {
+    console.warn('NeonDB login unavailable, trying Firebase:', error);
   }
 
-  // 2. Try Firebase Authentication
+  // Try Firebase Authentication for Google/Firebase-managed users.
   try {
     const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
     setStoredSession(userCredential.user);
     return userCredential.user;
   } catch (error: any) {
-    // If Firebase failed, check if account exists in admin list with wrong password
-    const emailExistsInAdmin = adminAccounts.some(a => a.email.trim().toLowerCase() === cleanEmail);
-    if (emailExistsInAdmin) {
-      throw new Error('Kata sandi yang Anda masukkan salah.');
-    }
     console.error('Email sign in error:', error);
     throw new Error(getFriendlyAuthErrorMessage(error));
   }

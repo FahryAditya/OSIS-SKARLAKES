@@ -160,6 +160,19 @@ async function startServer() {
   // NEONDB DATABASE API ROUTES
   // ==========================================
 
+  app.post('/api/db/auth/login', async (req: Request, res: Response) => {
+    try {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+      const accounts = await sql`SELECT id,email,display_name,role,sekbid_id FROM admin_accounts WHERE LOWER(email)=${email} AND password=${password} LIMIT 1`;
+      if (!accounts.length) return res.status(401).json({ error: 'Email atau kata sandi tidak cocok.' });
+      const account = accounts[0];
+      return res.json({ user: { uid: account.id, email: account.email, displayName: account.display_name, role: account.role } });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Login NeonDB gagal.' });
+    }
+  });
+
   // GET /api/db/data - Fetch all data
   app.get('/api/db/data', async (req: Request, res: Response) => {
     try {
