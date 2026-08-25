@@ -1,0 +1,148 @@
+/**
+ * NeonDB (PostgreSQL) Connection & Schema Module
+ * Server-side only - DO NOT import in frontend/browser code
+ */
+
+import { neon } from '@neondatabase/serverless';
+
+const DATABASE_URL = process.env.DATABASE_URL!;
+
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set. Add your NeonDB connection string to .env');
+}
+
+// Create Neon SQL client
+export const sql = neon(DATABASE_URL);
+
+/**
+ * Initialize all database tables (run once on server start)
+ */
+export async function initializeDatabase(): Promise<void> {
+  console.log('🗄️  Initializing NeonDB tables...');
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS org_config (
+      id SERIAL PRIMARY KEY,
+      data JSONB NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS members (
+      id TEXT PRIMARY KEY,
+      nim TEXT,
+      name TEXT NOT NULL,
+      division TEXT,
+      role TEXT,
+      phone TEXT,
+      email TEXT,
+      join_date TEXT,
+      is_active BOOLEAN DEFAULT true,
+      kelas TEXT,
+      avatar_url TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS events (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      type TEXT,
+      date TEXT,
+      start_time TEXT,
+      end_time TEXT,
+      location TEXT,
+      location_type TEXT,
+      qr_code_token TEXT,
+      status TEXT DEFAULT 'upcoming',
+      notes TEXT,
+      division_target TEXT,
+      organizer TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS attendance_records (
+      id TEXT PRIMARY KEY,
+      event_id TEXT,
+      member_id TEXT,
+      member_name TEXT,
+      member_nim TEXT,
+      division TEXT,
+      status TEXT,
+      timestamp TEXT,
+      notes TEXT,
+      proof_url TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS transactions (
+      id TEXT PRIMARY KEY,
+      type TEXT,
+      category TEXT,
+      amount NUMERIC,
+      date TEXT,
+      description TEXT,
+      recipient_or_payer TEXT,
+      receipt_proof TEXT,
+      recorded_by TEXT,
+      related_event_id TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS dues_records (
+      id TEXT PRIMARY KEY,
+      member_id TEXT,
+      year INTEGER,
+      month INTEGER,
+      week INTEGER,
+      amount NUMERIC,
+      status TEXT DEFAULT 'belum',
+      payment_date TEXT,
+      payment_method TEXT,
+      receipt_number TEXT,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS budget_plans (
+      id TEXT PRIMARY KEY,
+      proker_name TEXT,
+      division TEXT,
+      allocated_budget NUMERIC,
+      realized_budget NUMERIC,
+      date TEXT,
+      status TEXT DEFAULT 'Direncanakan',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS sekbid_members (
+      id TEXT PRIMARY KEY,
+      sekbid_id INTEGER,
+      name TEXT,
+      nis TEXT,
+      role TEXT,
+      grade_class TEXT,
+      phone TEXT,
+      email TEXT,
+      avatar_url TEXT,
+      status TEXT DEFAULT 'Aktif',
+      task_or_focus TEXT,
+      joined_period TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  console.log('✅ NeonDB tables initialized successfully.');
+}
