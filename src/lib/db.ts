@@ -1,18 +1,18 @@
-/**
- * NeonDB (PostgreSQL) Connection & Schema Module
- * Server-side only - DO NOT import in frontend/browser code
- */
-
 import { neon } from '@neondatabase/serverless';
 
-const DATABASE_URL = process.env.DATABASE_URL!;
-
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set. Add your NeonDB connection string to .env');
+// Helper to get SQL client lazily after dotenv is initialized
+export function getSql() {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL environment variable is not set.');
+  }
+  return neon(url);
 }
 
-// Create Neon SQL client
-export const sql = neon(DATABASE_URL);
+export const sql = (strings: TemplateStringsArray, ...values: any[]) => {
+  const client = getSql();
+  return client(strings, ...values);
+};
 
 /**
  * Initialize all database tables (run once on server start)
@@ -140,6 +140,18 @@ export async function initializeDatabase(): Promise<void> {
       status TEXT DEFAULT 'Aktif',
       task_or_focus TEXT,
       joined_period TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS admin_accounts (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      sekbid_id INTEGER,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;

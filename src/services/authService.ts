@@ -55,7 +55,7 @@ const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
   {
     id: 'acc-admin-01',
     email: 'admin@osis.sch.id',
-    password: 'osis123456',
+    password: 'admin.osis1',
     displayName: 'Administrator OSIS',
     role: 'Administrator (Ketua Umum OSIS)',
     createdAt: '2026-01-01',

@@ -9,7 +9,7 @@ import {
   CreditCard, 
   CheckCircle2, 
   AlertTriangle,
-  FileSpreadsheet,
+  Database,
   ExternalLink,
   RefreshCw,
   Sparkles,
@@ -44,10 +44,7 @@ interface SettingsViewProps {
   onClearFinance?: () => void;
   onClearAttendance?: () => void;
   onClearBudget?: () => void;
-  onOpenGoogleSheetsSync: () => void;
-  isGoogleSheetsConnected: boolean;
-  connectedSheetTitle?: string;
-  connectedSheetUrl?: string;
+  onSyncDb?: () => void;
   lastSyncedAt?: string | null;
 }
 
@@ -61,10 +58,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onClearFinance,
   onClearAttendance,
   onClearBudget,
-  onOpenGoogleSheetsSync,
-  isGoogleSheetsConnected,
-  connectedSheetTitle,
-  connectedSheetUrl,
+  onSyncDb,
   lastSyncedAt,
 }) => {
   const [formData, setFormData] = useState<OrganizationConfig>({ ...config });
@@ -205,66 +199,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </p>
       </div>
 
-      {/* Google Sheets Database Card in Settings */}
-      <div className="bg-gradient-to-br from-emerald-900 via-slate-900 to-slate-950 text-white p-6 rounded-3xl shadow-md border border-emerald-500/30 space-y-4">
+      {/* NeonDB Database Card in Settings */}
+      <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 text-white p-6 rounded-3xl shadow-md border border-emerald-500/30 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start space-x-3">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <FileSpreadsheet className="w-6 h-6" />
+              <Database className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="text-base font-bold">Integrasi Database Google Sheets</h2>
-                {isGoogleSheetsConnected ? (
-                  <span className="px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    Aktif Terhubung
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    Belum Terhubung
-                  </span>
-                )}
+                <h2 className="text-base font-bold">Database Cloud NeonDB (PostgreSQL)</h2>
+                <span className="px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-1"></span>
+                  Aktif Terhubung
+                </span>
               </div>
               <p className="text-xs text-slate-300 mt-1">
-                Jadikan Google Spreadsheet sebagai penyimpanan database cloud organisasi yang dapat diedit bersama secara real-time.
+                Penyimpanan cloud utama terenkripsi berbasis PostgreSQL di AWS Cloud (Neon Serverless). Semua perubahan data tersimpan secara otomatis dan permanen di cloud.
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            id="btn-settings-open-sheets"
-            onClick={onOpenGoogleSheetsSync}
-            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-2 shrink-0"
-          >
-            <Sparkles className="w-4 h-4 text-slate-950" />
-            <span>{isGoogleSheetsConnected ? 'Kelola Database Sheets' : 'Hubungkan Google Sheets'}</span>
-          </button>
+          {onSyncDb && (
+            <button
+              type="button"
+              id="btn-settings-sync-db"
+              onClick={onSyncDb}
+              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-2 shrink-0"
+            >
+              <RefreshCw className="w-4 h-4 text-slate-950" />
+              <span>Sinkronkan ke Cloud NeonDB</span>
+            </button>
+          )}
         </div>
 
-        {isGoogleSheetsConnected && (
-          <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
-            <div className="flex items-center space-x-2">
-              <span className="text-slate-300 font-medium truncate max-w-xs">{connectedSheetTitle}</span>
-              {connectedSheetUrl && (
-                <a 
-                  href={connectedSheetUrl} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="text-emerald-400 hover:underline inline-flex items-center text-2xs font-bold"
-                >
-                  <span>Buka Sheet</span>
-                  <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
-              )}
-            </div>
-            {lastSyncedAt && (
-              <span className="text-2xs text-slate-400">
-                Terakhir sinkron: {new Date(lastSyncedAt).toLocaleString('id-ID')}
-              </span>
-            )}
+        <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-slate-300 font-mono text-2xs bg-slate-800/80 px-2 py-1 rounded border border-slate-700">
+              Host: ep-dark-mouse-azmzhuxs.c-3.ap-southeast-1.aws.neon.tech / neondb
+            </span>
           </div>
-        )}
+          {lastSyncedAt && (
+            <span className="text-2xs text-slate-400">
+              Terakhir disinkronkan: {new Date(lastSyncedAt).toLocaleString('id-ID')}
+            </span>
+          )}
+        </div>
       </div>
 
       {savedSuccess && (

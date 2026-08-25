@@ -35,7 +35,6 @@ import { SettingsView } from './components/SettingsView';
 import { SelfCheckInModal } from './components/SelfCheckInModal';
 import { QuickTransactionModal } from './components/QuickTransactionModal';
 import { ReceiptModal } from './components/ReceiptModal';
-import { GoogleSheetsSyncModal } from './components/GoogleSheetsSyncModal';
 import { AuthModal } from './components/AuthModal';
 import { LoginView } from './components/LoginView';
 import { 
@@ -48,19 +47,34 @@ import {
 } from './components/FeedbackNotification';
 import { initAuth, logoutUser, getCurrentStoredSession } from './services/authService';
 import { 
-  SpreadsheetInfo, 
-  SpreadsheetDataPayload, 
-  appendTransactionToSheet, 
-  appendAttendanceToSheet,
-  DEFAULT_APPS_SCRIPT_URL,
-  syncViaAppsScript,
-  fetchViaAppsScript,
-  syncAllToSpreadsheet,
-  fetchDataFromSpreadsheet
-} from './services/googleSheetsService';
+  fetchAllData, 
+  saveConfig, 
+  saveMember, 
+  deleteMember, 
+  bulkSaveMembers,
+  saveEvent, 
+  deleteEvent, 
+  bulkSaveEvents,
+  saveAttendanceRecord, 
+  deleteAttendanceRecord, 
+  bulkSaveAttendance,
+  saveTransaction, 
+  deleteTransaction, 
+  bulkSaveTransactions,
+  saveDuesRecord, 
+  deleteDuesRecord, 
+  bulkSaveDues,
+  saveBudgetPlan, 
+  deleteBudgetPlan, 
+  bulkSaveBudget,
+  saveSekbidMember, 
+  deleteSekbidMember, 
+  bulkSaveSekbidMembers,
+  syncAllToDb 
+} from './services/dbService';
 import { User } from 'firebase/auth';
 import { formatRupiah } from './utils/formatters';
-import { RefreshCw, UploadCloud, FileSpreadsheet } from 'lucide-react';
+import { RefreshCw, UploadCloud, Database } from 'lucide-react';
 
 const STORAGE_KEYS = {
   CONFIG: 'org_app_config_v1',
@@ -254,38 +268,12 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Google Sheets Database State
-  const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
-
-  const [connectedSpreadsheet, setConnectedSpreadsheet] = useState<SpreadsheetInfo | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CONNECTED_SHEET);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    const gasUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_APPS_SCRIPT_URL;
-    return {
-      id: 'apps-script-connected',
-      title: 'Google Spreadsheet OSIS (Cloud DB)',
-      url: gasUrl,
-      sheets: ['Info_Organisasi', 'Data_Anggota', 'Kegiatan_Presensi', 'Rekap_Presensi', 'Buku_Kas_Keuangan', 'Iuran_Kas_Bulanan', 'RAB_Anggaran'],
-      lastSynced: undefined,
-    };
-  });
-
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(() => {
     return localStorage.getItem(STORAGE_KEYS.LAST_SYNCED) || null;
   });
 
-  const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const [isPullingFromSheets, setIsPullingFromSheets] = useState(false);
-  const [isPushingToSheets, setIsPushingToSheets] = useState(false);
+  const [isPullingFromDb, setIsPullingFromDb] = useState(false);
+  const [isPushingToDb, setIsPushingToDb] = useState(false);
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -445,22 +433,10 @@ export default function App() {
   }, [sekbidMembers]);
 
   useEffect(() => {
-    if (connectedSpreadsheet) {
-      localStorage.setItem(STORAGE_KEYS.CONNECTED_SHEET, JSON.stringify(connectedSpreadsheet));
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.CONNECTED_SHEET);
-    }
-  }, [connectedSpreadsheet]);
-
-  useEffect(() => {
     if (lastSyncedAt) {
       localStorage.setItem(STORAGE_KEYS.LAST_SYNCED, lastSyncedAt);
     }
   }, [lastSyncedAt]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.AUTO_SYNC, JSON.stringify(isAutoSyncEnabled));
-  }, [isAutoSyncEnabled]);
 
   // ==========================================
   // Attendance Handlers with Feedback
@@ -485,12 +461,10 @@ export default function App() {
       }
     );
 
-    // Auto-sync single record to Google Sheets if connected
-    if (isAutoSyncEnabled && googleAccessToken && connectedSpreadsheet) {
-      appendAttendanceToSheet(googleAccessToken, connectedSpreadsheet.id, newRecord).catch(err => {
-        console.warn('Auto-sync attendance to Google Sheets failed:', err);
-      });
-    }
+    // Auto-sync single record to NeonDB
+    saveAttendanceRecord(newRecord).catch(err => {
+      console.warn('NeonDB save attendance failed:', err);
+    });
   };
 
   const handleUpdateRecordStatus = (eventId: string, memberId: string, status: AttendanceStatus, notes?: string) => {
@@ -574,12 +548,10 @@ export default function App() {
       }
     );
 
-    // Auto-sync single transaction to Google Sheets if connected
-    if (isAutoSyncEnabled && googleAccessToken && connectedSpreadsheet) {
-      appendTransactionToSheet(googleAccessToken, connectedSpreadsheet.id, newTx).catch(err => {
-        console.warn('Auto-sync transaction to Google Sheets failed:', err);
-      });
-    }
+    // Auto-sync single transaction to NeonDB
+    saveTransaction(newTx).catch(err => {
+      console.warn('NeonDB save transaction failed:', err);
+    });
   };
 
   // ==========================================
@@ -875,157 +847,75 @@ export default function App() {
     }
   };
 
-  const handleApplyImportedFromSheets = (data: Partial<SpreadsheetDataPayload>) => {
-    if (data.config) setConfig(data.config);
-    if (data.members && data.members.length > 0) setMembers(data.members);
-    if (data.events && data.events.length > 0) setEvents(data.events);
-    if (data.attendanceRecords && data.attendanceRecords.length > 0) setAttendanceRecords(data.attendanceRecords);
-    if (data.transactions && data.transactions.length > 0) setTransactions(data.transactions);
-    if (data.duesRecords && data.duesRecords.length > 0) setDuesRecords(data.duesRecords);
-    if (data.budgetPlans && data.budgetPlans.length > 0) setBudgetPlans(data.budgetPlans);
-    setLastSyncedAt(new Date().toISOString());
-
-    triggerActionFeedback(
-      'Data Google Sheets Dimuat!',
-      'Seluruh 7 lembar kerja Google Sheets berhasil disinkronkan ke aplikasi.',
-      {
-        type: 'sync',
-        iconType: 'sheet',
-        badge: 'Cloud Sync',
-        withConfetti: true,
-      }
-    );
-  };
-
-  // Google Sheets Current Payload
-  const currentDataPayload: SpreadsheetDataPayload = {
-    config,
-    members,
-    events,
-    attendanceRecords,
-    transactions,
-    duesRecords,
-    budgetPlans,
-  };
-
   // ==========================================
-  // PURE GOOGLE SHEETS DATABASE PULL & PUSH
+  // NEONDB DATABASE PULL & PUSH
   // ==========================================
-  const handlePullFromSheets = async (isAuto = false) => {
-    const gasUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_APPS_SCRIPT_URL;
-
+  const handleFetchFromDb = async () => {
     try {
-      setIsPullingFromSheets(true);
-
-      let imported: Partial<SpreadsheetDataPayload> = {};
-
-      if (currentUser && googleAccessToken && connectedSpreadsheet && connectedSpreadsheet.id !== 'apps-script-connected') {
-        // Pull via Google Sheets API (OAuth)
-        imported = await fetchDataFromSpreadsheet(googleAccessToken, connectedSpreadsheet.id);
-      } else if (gasUrl) {
-        // Pull via Apps Script Webhook (No Login required)
-        imported = await fetchViaAppsScript(gasUrl);
-      }
-
-      let loadedCount = 0;
-      if (imported.config) setConfig(imported.config);
-      if (imported.members && imported.members.length > 0) {
-        setMembers(imported.members);
-        loadedCount += imported.members.length;
-      }
-      if (imported.events && imported.events.length > 0) {
-        setEvents(imported.events);
-        loadedCount += imported.events.length;
-      }
-      if (imported.attendanceRecords && imported.attendanceRecords.length > 0) {
-        setAttendanceRecords(imported.attendanceRecords);
-        loadedCount += imported.attendanceRecords.length;
-      }
-      if (imported.transactions && imported.transactions.length > 0) {
-        setTransactions(imported.transactions);
-        loadedCount += imported.transactions.length;
-      }
-      if (imported.duesRecords && imported.duesRecords.length > 0) {
-        setDuesRecords(imported.duesRecords);
-        loadedCount += imported.duesRecords.length;
-      }
-      if (imported.budgetPlans && imported.budgetPlans.length > 0) {
-        setBudgetPlans(imported.budgetPlans);
-        loadedCount += imported.budgetPlans.length;
-      }
-
-      const now = new Date().toISOString();
-      setLastSyncedAt(now);
-
-      if (!isAuto) {
-        triggerActionFeedback(
-          'Data Google Sheets Termutakhir Dimuat!',
-          loadedCount > 0 
-            ? `Berhasil menarik ${loadedCount} data dari Google Spreadsheet.` 
-            : 'Sinkronisasi berhasil (Spreadsheet dalam kondisi bersih/kosong).',
-          {
-            type: 'sync',
-            iconType: 'sheet',
-            badge: 'Tarik Cloud',
-            withConfetti: true,
-          }
-        );
-      } else {
-        showToast('Sinkronisasi Otomatis', 'Data cloud Google Sheets siap digunakan', 'success', 'sheet');
-      }
-    } catch (err: any) {
-      console.warn('Pull from sheets failed:', err);
-      if (!isAuto) {
-        showToast('Gagal Menarik Data', err.message || 'Periksa koneksi Google Spreadsheet / Apps Script', 'error');
-      }
-    } finally {
-      setIsPullingFromSheets(false);
-    }
-  };
-
-  const handlePushToSheets = async () => {
-    const gasUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_APPS_SCRIPT_URL;
-
-    try {
-      setIsPushingToSheets(true);
-
-      if (currentUser && googleAccessToken && connectedSpreadsheet && connectedSpreadsheet.id !== 'apps-script-connected') {
-        // Push via Google Sheets API (OAuth)
-        await syncAllToSpreadsheet(googleAccessToken, connectedSpreadsheet.id, currentDataPayload);
-      } else if (gasUrl) {
-        // Push via Apps Script Webhook
-        await syncViaAppsScript(gasUrl, currentDataPayload);
-      }
+      setIsPullingFromDb(true);
+      const data = await fetchAllData();
+      if (data.config) setConfig(data.config);
+      if (data.members && data.members.length > 0) setMembers(data.members);
+      if (data.events && data.events.length > 0) setEvents(data.events);
+      if (data.attendanceRecords && data.attendanceRecords.length > 0) setAttendanceRecords(data.attendanceRecords);
+      if (data.transactions && data.transactions.length > 0) setTransactions(data.transactions);
+      if (data.duesRecords && data.duesRecords.length > 0) setDuesRecords(data.duesRecords);
+      if (data.budgetPlans && data.budgetPlans.length > 0) setBudgetPlans(data.budgetPlans);
+      if (data.sekbidMembers && data.sekbidMembers.length > 0) setSekbidMembers(data.sekbidMembers);
 
       const now = new Date().toISOString();
       setLastSyncedAt(now);
 
       triggerActionFeedback(
-        'Database Google Sheets Berhasil Disinkronkan!',
-        'Seluruh lembar kerja (Info, Anggota, Absensi, Kas, Iuran, RAB) telah diperbarui di Google Spreadsheet.',
+        'Data Termutakhir NeonDB Dimuat!',
+        'Berhasil memuat seluruh data dari NeonDB PostgreSQL Cloud.',
         {
-          type: 'celebrate',
-          iconType: 'sheet',
-          badge: 'Sinkronisasi Penuh',
+          type: 'sync',
+          badge: 'NeonDB Cloud',
           withConfetti: true,
         }
       );
     } catch (err: any) {
-      console.error('Push to sheets failed:', err);
-      showToast('Gagal Sinkronisasi', err.message || 'Gagal mengirim data ke Google Spreadsheet', 'error');
+      console.warn('Fetch from NeonDB failed:', err);
+      showToast('Gagal Memuat Data', err.message || 'Gagal terhubung ke NeonDB', 'error');
     } finally {
-      setIsPushingToSheets(false);
+      setIsPullingFromDb(false);
     }
   };
 
-  // Initial pull from Google Sheets on component mount
-  const hasPulledOnMount = useRef(false);
-  useEffect(() => {
-    if (!hasPulledOnMount.current) {
-      hasPulledOnMount.current = true;
-      handlePullFromSheets(true);
+  const handleSyncToDb = async () => {
+    try {
+      setIsPushingToDb(true);
+      await syncAllToDb({
+        config,
+        members,
+        events,
+        attendanceRecords,
+        transactions,
+        duesRecords,
+        budgetPlans,
+        sekbidMembers,
+      });
+
+      const now = new Date().toISOString();
+      setLastSyncedAt(now);
+
+      triggerActionFeedback(
+        'Database NeonDB Berhasil Disinkronkan!',
+        'Seluruh tabel (Config, Anggota, Absensi, Kas, Iuran, RAB) telah diperbarui di NeonDB Cloud.',
+        {
+          type: 'celebrate',
+          badge: 'NeonDB Sync',
+          withConfetti: true,
+        }
+      );
+    } catch (err: any) {
+      console.error('Sync to NeonDB failed:', err);
+      showToast('Gagal Sinkronisasi', err.message || 'Gagal mengirim data ke NeonDB', 'error');
+    } finally {
+      setIsPushingToDb(false);
     }
-  }, []);
+  };
 
   const handleClearAllMembers = () => {
     setMembers([]);
@@ -1144,15 +1034,12 @@ export default function App() {
           setQuickTransactionType('masuk');
           setIsQuickTransactionOpen(true);
         }}
-        onOpenGoogleSheetsSync={() => setIsGoogleSheetsModalOpen(true)}
-        isGoogleSheetsConnected={Boolean(connectedSpreadsheet)}
-        isGoogleSignedIn={Boolean(currentUser && googleAccessToken)}
         currentUser={currentUser}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
       />
 
-      {/* Pure Google Sheets Database Quick Control Bar */}
+      {/* NeonDB Database Quick Control Bar */}
       <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 text-white border-b border-emerald-500/20 py-2.5 px-4 sm:px-6 lg:px-8 no-print">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center space-x-2.5 text-xs">
@@ -1161,13 +1048,13 @@ export default function App() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <div className="flex items-center space-x-1.5 flex-wrap">
-              <span className="font-bold text-emerald-300">Database Google Sheets Murni Aktif:</span>
-              <span className="text-slate-300 truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
-                {connectedSpreadsheet?.title || 'Spreadsheet Cloud OSIS'}
+              <span className="font-bold text-emerald-300">Database NeonDB Cloud (PostgreSQL) Aktif:</span>
+              <span className="text-slate-300 font-mono text-2xs bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                ep-dark-mouse-azmzhuxs.c-3.ap-southeast-1.aws.neon.tech
               </span>
               {lastSyncedAt && (
                 <span className="text-2xs text-slate-400">
-                  (Sinkron: {new Date(lastSyncedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})
+                  (Disinkronkan: {new Date(lastSyncedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})
                 </span>
               )}
             </div>
@@ -1176,36 +1063,26 @@ export default function App() {
           <div className="flex items-center space-x-2 shrink-0">
             <button
               type="button"
-              id="btn-quick-pull-sheets"
-              onClick={() => handlePullFromSheets(false)}
-              disabled={isPullingFromSheets}
+              id="btn-quick-pull-db"
+              onClick={handleFetchFromDb}
+              disabled={isPullingFromDb}
               className="inline-flex items-center px-2.5 py-1 bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-2xs"
-              title="Tarik data terbaru dari Google Sheets"
+              title="Tarik data terbaru dari NeonDB Cloud"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isPullingFromSheets ? 'animate-spin text-emerald-300' : ''}`} />
-              <span>{isPullingFromSheets ? 'Menarik Data...' : 'Tarik Data'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isPullingFromDb ? 'animate-spin text-emerald-300' : ''}`} />
+              <span>{isPullingFromDb ? 'Memuat Data...' : 'Muat Data DB'}</span>
             </button>
 
             <button
               type="button"
-              id="btn-quick-push-sheets"
-              onClick={handlePushToSheets}
-              disabled={isPushingToSheets}
+              id="btn-quick-push-db"
+              onClick={handleSyncToDb}
+              disabled={isPushingToDb}
               className="inline-flex items-center px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-2xs"
-              title="Kirim dan sinkronkan semua perubahan ke Google Sheets"
+              title="Kirim dan sinkronkan semua perubahan ke NeonDB Cloud"
             >
-              <UploadCloud className={`w-3.5 h-3.5 mr-1.5 ${isPushingToSheets ? 'animate-bounce text-slate-950' : ''}`} />
-              <span>{isPushingToSheets ? 'Menyimpan...' : 'Sinkronkan'}</span>
-            </button>
-
-            <button
-              type="button"
-              id="btn-quick-manage-sheets"
-              onClick={() => setIsGoogleSheetsModalOpen(true)}
-              className="inline-flex items-center px-2 py-1 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors"
-              title="Pengaturan Google Sheets"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <UploadCloud className={`w-3.5 h-3.5 mr-1.5 ${isPushingToDb ? 'animate-bounce text-slate-950' : ''}`} />
+              <span>{isPushingToDb ? 'Menyimpan...' : 'Sinkronkan DB'}</span>
             </button>
           </div>
         </div>
@@ -1254,8 +1131,8 @@ export default function App() {
             onDeleteMember={handleDeleteSekbidMember}
             onUpdateSekbid={handleUpdateSekbidDetail}
             onResetData={handleResetSekbidData}
-            onSyncSheets={handlePushToSheets}
-            isSyncing={isPushingToSheets}
+            onSyncSheets={handleSyncToDb}
+            isSyncing={isPushingToDb}
           />
         )}
 
@@ -1348,7 +1225,8 @@ export default function App() {
             config={config}
             onUpdateConfig={(newConfig) => {
               setConfig(newConfig);
-              triggerActionFeedback('Pengaturan Disimpan!', 'Profil dan konfigurasi organisasi telah diperbarui.', {
+              saveConfig(newConfig).catch(err => console.warn('Save config error:', err));
+              triggerActionFeedback('Pengaturan Disimpan!', 'Profil dan konfigurasi organisasi telah diperbarui di NeonDB.', {
                 type: 'success',
                 badge: 'Pengaturan',
               });
@@ -1360,10 +1238,7 @@ export default function App() {
             onClearFinance={handleClearAllFinance}
             onClearAttendance={handleClearAllAttendance}
             onClearBudget={handleClearAllBudget}
-            onOpenGoogleSheetsSync={() => setIsGoogleSheetsModalOpen(true)}
-            isGoogleSheetsConnected={Boolean(connectedSpreadsheet)}
-            connectedSheetTitle={connectedSpreadsheet?.title}
-            connectedSheetUrl={connectedSpreadsheet?.url}
+            onSyncDb={handleSyncToDb}
             lastSyncedAt={lastSyncedAt}
           />
         )}
@@ -1373,7 +1248,7 @@ export default function App() {
       {/* Footer (No-Print) */}
       <footer className="bg-white border-t border-slate-200 py-4 no-print mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} {config.name} ({config.period}) • Sistem Informasi Absensi & Keuangan Organisasi</p>
+          <p>© {new Date().getFullYear()} {config.name} ({config.period}) • Sistem Informasi Absensi & Keuangan Organisasi (NeonDB PostgreSQL Cloud)</p>
         </div>
       </footer>
 
@@ -1409,45 +1284,6 @@ export default function App() {
       {/* ========================================== */}
       {/* MODALS */}
       {/* ========================================== */}
-      <GoogleSheetsSyncModal
-        isOpen={isGoogleSheetsModalOpen}
-        onClose={() => setIsGoogleSheetsModalOpen(false)}
-        currentUser={currentUser}
-        accessToken={googleAccessToken}
-        connectedSpreadsheet={connectedSpreadsheet}
-        lastSyncedAt={lastSyncedAt}
-        isAutoSyncEnabled={isAutoSyncEnabled}
-        onToggleAutoSync={setIsAutoSyncEnabled}
-        onSpreadsheetConnected={(info) => {
-          setConnectedSpreadsheet(info);
-          setLastSyncedAt(new Date().toISOString());
-          triggerActionFeedback(
-            'Spreadsheet Terhubung & Disinkronkan!',
-            `Data tersinkronkan ke: "${info.title}"`,
-            {
-              type: 'sync',
-              iconType: 'sheet',
-              badge: 'Google Sheets',
-              withConfetti: true,
-            }
-          );
-        }}
-        onSpreadsheetDisconnected={() => {
-          setConnectedSpreadsheet(null);
-          setLastSyncedAt(null);
-          showToast('Spreadsheet Terputus', 'Koneksi Google Sheets dinonaktifkan', 'info');
-        }}
-        onAuthSuccess={(user, token) => {
-          setCurrentUser(user);
-          setGoogleAccessToken(token);
-        }}
-        onAuthLogout={() => {
-          setCurrentUser(null);
-          setGoogleAccessToken(null);
-        }}
-        currentDataPayload={currentDataPayload}
-        onApplyImportedData={handleApplyImportedFromSheets}
-      />
 
       <SelfCheckInModal
         isOpen={isSelfCheckInOpen}

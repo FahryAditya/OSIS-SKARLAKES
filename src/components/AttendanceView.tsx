@@ -517,7 +517,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                                     member,
                                     eventId,
                                     status: 'izin',
-                                    reasonText: currentRecord?.reason || '',
+                                    reasonText: currentRecord?.notes || '',
                                   });
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
@@ -542,7 +542,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                                     member,
                                     eventId,
                                     status: 'sakit',
-                                    reasonText: currentRecord?.reason || '',
+                                    reasonText: currentRecord?.notes || '',
                                   });
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${

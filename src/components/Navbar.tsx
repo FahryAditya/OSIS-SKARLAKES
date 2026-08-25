@@ -11,7 +11,7 @@ import {
   PlusCircle, 
   QrCode,
   Building2,
-  FileSpreadsheet,
+  Database,
   LogIn,
   LogOut,
   User as UserIcon,
@@ -28,9 +28,6 @@ interface NavbarProps {
   config: OrganizationConfig;
   onOpenSelfCheckIn: () => void;
   onOpenQuickTransaction: () => void;
-  onOpenGoogleSheetsSync: () => void;
-  isGoogleSheetsConnected: boolean;
-  isGoogleSignedIn: boolean;
   currentUser: User | null;
   onOpenAuthModal: () => void;
   onLogout: () => void;
@@ -42,9 +39,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   config,
   onOpenSelfCheckIn,
   onOpenQuickTransaction,
-  onOpenGoogleSheetsSync,
-  isGoogleSheetsConnected,
-  isGoogleSignedIn,
   currentUser,
   onOpenAuthModal,
   onLogout,
@@ -127,32 +121,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Quick Action Buttons & Auth User */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               
-              {/* Google Sheets Sync Button */}
-              <button
-                id="btn-nav-google-sheets"
-                onClick={onOpenGoogleSheetsSync}
-                className={`inline-flex items-center h-8 sm:h-9 px-2 sm:px-3 text-xs font-semibold rounded-lg border transition-all shadow-2xs ${
-                  isGoogleSheetsConnected
-                    ? 'bg-emerald-50/90 border-emerald-300/80 text-emerald-800 hover:bg-emerald-100'
-                    : isGoogleSignedIn
-                    ? 'bg-amber-50 border-amber-300/80 text-amber-800 hover:bg-amber-100'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-                title={isGoogleSheetsConnected ? "Tersambung ke Google Sheets" : "Hubungkan Google Sheets"}
+              {/* NeonDB Cloud Status Indicator */}
+              <div 
+                id="indicator-nav-neondb"
+                className="inline-flex items-center h-8 sm:h-9 px-2 sm:px-3 text-xs font-semibold rounded-lg border bg-emerald-50/90 border-emerald-300/80 text-emerald-800 shadow-2xs cursor-default"
+                title="Tersambung ke NeonDB PostgreSQL Cloud"
               >
-                <FileSpreadsheet className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${
-                  isGoogleSheetsConnected ? 'text-emerald-600' : 'text-slate-500'
-                } sm:mr-1.5`} />
+                <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 sm:mr-1.5 shrink-0" />
                 <span className="hidden md:inline whitespace-nowrap">
-                  {isGoogleSheetsConnected ? 'Sheets Terhubung' : 'Google Sheets'}
+                  NeonDB Cloud
                 </span>
-                {isGoogleSheetsConnected && (
-                  <span className="ml-1 sm:ml-2 flex h-2 w-2 relative shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                )}
-              </button>
+                <span className="ml-1 sm:ml-2 flex h-2 w-2 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              </div>
 
               {/* Self check in button */}
               <button
