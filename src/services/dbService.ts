@@ -31,17 +31,30 @@ async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 30000);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      signal: options.signal || controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error: any) {
+    if (error?.name === 'AbortError') throw new Error('Koneksi ke server NeonDB timeout (30 detik).');
+    throw new Error('Server API NeonDB tidak dapat dihubungi. Jalankan `npm run dev` untuk mode lokal.');
+  } finally {
+    window.clearTimeout(timeout);
+  }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    const body = await res.text();
+    let message = body;
+    try { message = JSON.parse(body).error || body; } catch { /* response bukan JSON */ }
+    throw new Error(message || `HTTP ${res.status}`);
   }
 
   return res.json();

@@ -22,6 +22,17 @@ async function ensureTables() {
   await sql`CREATE TABLE IF NOT EXISTS admin_accounts (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, display_name TEXT NOT NULL, role TEXT NOT NULL, sekbid_id INTEGER, created_at TIMESTAMP DEFAULT NOW())`;
 }
 
+let tablesReady: Promise<void> | null = null;
+function ensureTablesOnce() {
+  if (!tablesReady) {
+    tablesReady = ensureTables().catch((error) => {
+      tablesReady = null;
+      throw error;
+    });
+  }
+  return tablesReady;
+}
+
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 const mapMember = (r: any) => ({ id: r.id, nim: r.nim, name: r.name, division: r.division, role: r.role, phone: r.phone, email: r.email, joinDate: r.join_date, isActive: r.is_active, kelas: r.kelas, avatarUrl: r.avatar_url });
 const mapEvent = (r: any) => ({ id: r.id, title: r.title, type: r.type, date: r.date, startTime: r.start_time, endTime: r.end_time, location: r.location, locationType: r.location_type, qrCodeToken: r.qr_code_token, status: r.status, notes: r.notes, divisionTarget: r.division_target, organizer: r.organizer });
@@ -52,7 +63,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const paramId = subSeg !== 'bulk' ? subSeg : '';
 
   try {
-    await ensureTables();
+    if (segment === 'health' && req.method === 'GET') {
+      const result = await getSql()`SELECT 1 AS ok`;
+      return res.json({ status: 'ok', database: result[0]?.ok === 1 ? 'connected' : 'unexpected-response' });
+    }
+
+    await ensureTablesOnce();
     const sql = getSql();
 
     // ── GET /api/db/data ────────────────────────────────────────────────────

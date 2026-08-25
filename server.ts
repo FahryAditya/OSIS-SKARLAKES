@@ -42,6 +42,16 @@ async function startServer() {
     });
   });
 
+  app.get('/api/db/health', async (req: Request, res: Response) => {
+    try {
+      const result = await sql`SELECT 1 AS ok`;
+      return res.json({ status: 'ok', database: result[0]?.ok === 1 ? 'connected' : 'unexpected-response' });
+    } catch (err: any) {
+      console.error('NeonDB healthcheck failed:', err);
+      return res.status(500).json({ status: 'error', error: err.message || 'NeonDB tidak dapat dihubungi.' });
+    }
+  });
+
   // Check Google Sheets API Key configuration status
   app.get('/api/sheets/status', (req: Request, res: Response) => {
     const apiKey = getGoogleSheetsApiKey();

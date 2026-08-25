@@ -469,34 +469,28 @@ export default function App() {
 
   const handleUpdateRecordStatus = (eventId: string, memberId: string, status: AttendanceStatus, notes?: string) => {
     const member = members.find(m => m.id === memberId);
+    if (!member) return;
+    const current = attendanceRecords.find(r => r.eventId === eventId && r.memberId === memberId);
+    const updatedRecord: AttendanceRecord = current
+      ? { ...current, status, notes: notes !== undefined ? notes : current.notes, timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16) }
+      : {
+          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          eventId, memberId, memberName: member.name, memberNim: member.nim,
+          division: member.division, status, notes,
+          timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        };
     setAttendanceRecords(prev => {
       const existingIdx = prev.findIndex(r => r.eventId === eventId && r.memberId === memberId);
-      if (!member) return prev;
 
       if (existingIdx >= 0) {
         const updated = [...prev];
-        updated[existingIdx] = {
-          ...updated[existingIdx],
-          status,
-          notes: notes !== undefined ? notes : updated[existingIdx].notes,
-          timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        };
+        updated[existingIdx] = updatedRecord;
         return updated;
       } else {
-        const newRec: AttendanceRecord = {
-          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          eventId,
-          memberId,
-          memberName: member.name,
-          memberNim: member.nim,
-          division: member.division,
-          status,
-          notes,
-          timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        };
-        return [...prev, newRec];
+        return [...prev, updatedRecord];
       }
     });
+    saveAttendanceRecord(updatedRecord).catch(err => console.warn('NeonDB update attendance failed:', err));
 
     showToast(
       'Status Presensi Diperbarui',
@@ -513,6 +507,7 @@ export default function App() {
       qrCodeToken: `${config.shortName}-${Date.now().toString(36).toUpperCase()}`,
     };
     setEvents(prev => [newEvent, ...prev]);
+    saveEvent(newEvent).catch(err => console.warn('NeonDB save event failed:', err));
 
     triggerActionFeedback(
       'Sesi Kegiatan Dibuat!',
@@ -613,6 +608,27 @@ export default function App() {
       return existing;
     });
 
+    const duesToSave = monthsToPay.map(month => {
+      const existing = duesRecords.find(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === month);
+      return {
+        ...(existing || {
+          id: `due-${memberId}-2026-${month}-${Date.now()}`,
+          memberId,
+          year: 2026,
+          month,
+          amount: config.defaultMonthlyDue,
+          status: 'belum' as const,
+        }),
+        amount: customAmount ? Math.round(customAmount / (monthsToPay.length || 1)) : (existing?.amount || config.defaultMonthlyDue),
+        status: 'lunas' as const,
+        paymentDate: todayStr,
+        paymentMethod,
+        receiptNumber: receiptNum,
+        notes: notes || label,
+      };
+    });
+    bulkSaveDues(duesToSave).catch(err => console.warn('NeonDB payment dues failed:', err));
+
     // Auto-record into General Ledger (Buku Kas Masuk)
     handleSaveTransaction({
       type: 'masuk',
@@ -660,6 +676,7 @@ export default function App() {
       id: `m-${Date.now()}`,
     };
     setMembers(prev => [...prev, newMember]);
+    saveMember(newMember).catch(err => console.warn('NeonDB save member failed:', err));
 
     // Also create 12 months due records for the new member
     const newDues: MonthlyDuesRecord[] = [];
@@ -674,6 +691,7 @@ export default function App() {
       });
     }
     setDuesRecords(prev => [...prev, ...newDues]);
+    bulkSaveDues(newDues).catch(err => console.warn('NeonDB save dues failed:', err));
 
     triggerActionFeedback(
       'Anggota Berhasil Ditambahkan!',
@@ -695,6 +713,7 @@ export default function App() {
     }));
 
     setMembers(prev => [...prev, ...createdMembers]);
+    bulkSaveMembers(createdMembers).catch(err => console.warn('NeonDB bulk save members failed:', err));
 
     // Create 12 months due records for each imported member
     const newDues: MonthlyDuesRecord[] = [];
@@ -711,6 +730,7 @@ export default function App() {
       }
     });
     setDuesRecords(prev => [...prev, ...newDues]);
+    bulkSaveDues(newDues).catch(err => console.warn('NeonDB bulk save dues failed:', err));
 
     triggerActionFeedback(
       'Import Data Berhasil!',
@@ -724,6 +744,8 @@ export default function App() {
   };
 
   const handleUpdateMember = (id: string, updated: Partial<Member>) => {
+    const existing = members.find(m => m.id === id);
+    if (existing) saveMember({ ...existing, ...updated }).catch(err => console.warn('NeonDB update member failed:', err));
     setMembers(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
     showToast('Data Anggota Diperbarui', 'Perubahan biodata anggota berhasil disimpan', 'success', 'user');
   };
@@ -733,6 +755,7 @@ export default function App() {
     setMembers(prev => prev.filter(m => m.id !== id));
     setDuesRecords(prev => prev.filter(d => d.memberId !== id));
     setAttendanceRecords(prev => prev.filter(r => r.memberId !== id));
+    deleteMember(id).catch(err => console.warn('NeonDB delete member failed:', err));
     showToast('Anggota Dihapus', `${member?.name || 'Anggota'} telah dihapus dari daftar.`, 'info');
   };
 
@@ -742,6 +765,7 @@ export default function App() {
     setMembers(prev => prev.filter(m => !idSet.has(m.id)));
     setDuesRecords(prev => prev.filter(d => !idSet.has(d.memberId)));
     setAttendanceRecords(prev => prev.filter(r => !idSet.has(r.memberId)));
+    Promise.all(ids.map(id => deleteMember(id))).catch(err => console.warn('NeonDB bulk delete members failed:', err));
     showToast(
       reasonTitle || 'Anggota Berhasil Dihapus',
       `Sebanyak ${ids.length} data anggota telah dihapus dari sistem.`,
@@ -759,16 +783,20 @@ export default function App() {
       id: `sm-${Date.now()}`,
     };
     setSekbidMembers(prev => [...prev, newMember]);
+    saveSekbidMember(newMember).catch(err => console.warn('NeonDB save sekbid member failed:', err));
     showToast('Pengurus Sekbid Ditambahkan', `${newMember.name} ditambahkan ke Sekbid ${newMember.sekbidId}`, 'success');
   };
 
   const handleUpdateSekbidMember = (id: string, updated: Partial<SekbidMember>) => {
+    const existing = sekbidMembers.find(m => m.id === id);
+    if (existing) saveSekbidMember({ ...existing, ...updated }).catch(err => console.warn('NeonDB update sekbid member failed:', err));
     setSekbidMembers(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
     showToast('Data Pengurus Sekbid Diperbarui', 'Perubahan anggota sekbid tersimpan', 'success');
   };
 
   const handleDeleteSekbidMember = (id: string) => {
     setSekbidMembers(prev => prev.filter(m => m.id !== id));
+    deleteSekbidMember(id).catch(err => console.warn('NeonDB delete sekbid member failed:', err));
     showToast('Pengurus Sekbid Dihapus', 'Data anggota sekbid dihapus', 'info');
   };
 
@@ -794,6 +822,7 @@ export default function App() {
       id: `rab-${Date.now()}`,
     };
     setBudgetPlans(prev => [...prev, newPlan]);
+    saveBudgetPlan(newPlan).catch(err => console.warn('NeonDB save budget failed:', err));
     triggerActionFeedback(
       'RAB Berhasil Ditambahkan!',
       `Anggaran "${newPlan.prokerName}" sebesar ${formatRupiah(newPlan.allocatedBudget)} telah dicatat.`,
@@ -855,13 +884,13 @@ export default function App() {
       setIsPullingFromDb(true);
       const data = await fetchAllData();
       if (data.config) setConfig(data.config);
-      if (data.members && data.members.length > 0) setMembers(data.members);
-      if (data.events && data.events.length > 0) setEvents(data.events);
-      if (data.attendanceRecords && data.attendanceRecords.length > 0) setAttendanceRecords(data.attendanceRecords);
-      if (data.transactions && data.transactions.length > 0) setTransactions(data.transactions);
-      if (data.duesRecords && data.duesRecords.length > 0) setDuesRecords(data.duesRecords);
-      if (data.budgetPlans && data.budgetPlans.length > 0) setBudgetPlans(data.budgetPlans);
-      if (data.sekbidMembers && data.sekbidMembers.length > 0) setSekbidMembers(data.sekbidMembers);
+      setMembers(data.members || []);
+      setEvents(data.events || []);
+      setAttendanceRecords(data.attendanceRecords || []);
+      setTransactions(data.transactions || []);
+      setDuesRecords(data.duesRecords || []);
+      setBudgetPlans(data.budgetPlans || []);
+      setSekbidMembers(data.sekbidMembers || []);
 
       const now = new Date().toISOString();
       setLastSyncedAt(now);
