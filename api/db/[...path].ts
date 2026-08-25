@@ -52,11 +52,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   // Determine sub-path: req.query.path is an array like ['data'] or ['members', '123']
-  const pathArr: string[] = Array.isArray(req.query.path)
-    ? (req.query.path as string[])
-    : req.query.path
-    ? [req.query.path as string]
-    : [];
+  const rawPath = Array.isArray(req.query.path)
+    ? (req.query.path as string[]).join('/')
+    : typeof req.query.path === 'string'
+    ? req.query.path
+    : '';
+  const pathArr: string[] = rawPath.split('/').filter(Boolean);
 
   const segment = pathArr[0] ?? '';   // e.g. 'data', 'members', 'events' ...
   const subSeg  = pathArr[1] ?? '';   // e.g. 'bulk', or an ID

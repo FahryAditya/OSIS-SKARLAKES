@@ -68,17 +68,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
   ];
 
-  // Get user role from local storage if available
-  let userRole = 'Pengurus OSIS';
-  if (currentUser) {
-    try {
-      const storedProfile = localStorage.getItem(`user_profile_${currentUser.uid}`);
-      if (storedProfile) {
-        const parsed = JSON.parse(storedProfile);
-        if (parsed.role) userRole = parsed.role;
-      }
-    } catch (e) {}
-  }
+  // Session and profile data are memory-only; synthetic admin users expose role directly.
+  const userRole = (currentUser as (User & { role?: string }) | null)?.role || 'Pengurus OSIS';
 
   const userDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Pengurus OSIS';
 

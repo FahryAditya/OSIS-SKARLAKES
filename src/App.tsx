@@ -15,14 +15,8 @@ import {
 } from './types';
 import { 
   initialOrganizationConfig, 
-  initialMembers, 
-  initialEvents, 
-  initialAttendanceRecords, 
-  initialTransactions, 
-  generateInitialDues, 
-  initialBudgetPlans 
 } from './data/initialData';
-import { initialSekbidList, initialSekbidMembers } from './data/sekbidData';
+import { initialSekbidList } from './data/sekbidData';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { SekbidView } from './components/SekbidView';
@@ -76,191 +70,18 @@ import { User } from 'firebase/auth';
 import { formatRupiah } from './utils/formatters';
 import { RefreshCw, UploadCloud, Database } from 'lucide-react';
 
-const STORAGE_KEYS = {
-  CONFIG: 'org_app_config_v1',
-  MEMBERS: 'org_app_members_v1',
-  SEKBID_LIST: 'org_app_sekbid_list_v1',
-  SEKBID_MEMBERS: 'org_app_sekbid_members_v1',
-  EVENTS: 'org_app_events_v1',
-  ATTENDANCE: 'org_app_attendance_v1',
-  TRANSACTIONS: 'org_app_transactions_v1',
-  DUES: 'org_app_dues_v1',
-  BUDGET: 'org_app_budget_v1',
-  CONNECTED_SHEET: 'org_app_connected_sheet_v1',
-  LAST_SYNCED: 'org_app_last_synced_v1',
-  AUTO_SYNC: 'org_app_autosync_v1',
-  GAS_URL: 'org_app_gas_url_v1',
-  DB_VERSION: 'org_app_pure_db_v2',
-};
-
-// Automatic cleanup of legacy demo data on load
-function checkAndCleanLegacyDummyData() {
-  const version = localStorage.getItem(STORAGE_KEYS.DB_VERSION);
-  if (version !== 'v2_pure_sheets') {
-    const rawMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-    if (rawMembers && (rawMembers.includes('m-01') || rawMembers.includes('Fahry') || rawMembers.includes('HIMA-IF'))) {
-      localStorage.removeItem(STORAGE_KEYS.MEMBERS);
-    }
-    const rawSekbidMembers = localStorage.getItem(STORAGE_KEYS.SEKBID_MEMBERS);
-    if (rawSekbidMembers && rawSekbidMembers.includes('sm-01')) {
-      localStorage.removeItem(STORAGE_KEYS.SEKBID_MEMBERS);
-    }
-    const rawEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    if (rawEvents && rawEvents.includes('evt-01')) {
-      localStorage.removeItem(STORAGE_KEYS.EVENTS);
-    }
-    const rawAtt = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
-    if (rawAtt && rawAtt.includes('att-1-1')) {
-      localStorage.removeItem(STORAGE_KEYS.ATTENDANCE);
-    }
-    const rawTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    if (rawTx && rawTx.includes('tx-')) {
-      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
-    }
-    const rawDues = localStorage.getItem(STORAGE_KEYS.DUES);
-    if (rawDues && (rawDues.includes('due-m-01') || rawDues.includes('amount":20000'))) {
-      localStorage.removeItem(STORAGE_KEYS.DUES);
-    }
-    const rawBudget = localStorage.getItem(STORAGE_KEYS.BUDGET);
-    if (rawBudget && rawBudget.includes('rab-01')) {
-      localStorage.removeItem(STORAGE_KEYS.BUDGET);
-    }
-    const rawConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
-    if (rawConfig && (rawConfig.includes('HIMA-IF') || rawConfig.includes('Organisasi Siswa Intra Sekolah (OSIS)'))) {
-      localStorage.removeItem(STORAGE_KEYS.CONFIG);
-    }
-    localStorage.setItem(STORAGE_KEYS.DB_VERSION, 'v3_skarlakes');
-  }
-}
-
-checkAndCleanLegacyDummyData();
-
 export default function App() {
-  // ==========================================
-  // State Initialization from LocalStorage
-  // ==========================================
-  const [config, setConfig] = useState<OrganizationConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CONFIG);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (!parsed.logoUrl || parsed.shortName === 'OSIS' || parsed.shortName === 'HIMA-IF') {
-          parsed.logoUrl = initialOrganizationConfig.logoUrl;
-          parsed.name = initialOrganizationConfig.name;
-          parsed.shortName = initialOrganizationConfig.shortName;
-          parsed.institution = initialOrganizationConfig.institution;
-        }
-        return parsed;
-      } catch (e) {
-        return initialOrganizationConfig;
-      }
-    }
-    return initialOrganizationConfig;
-  });
-
-  const [members, setMembers] = useState<Member[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Remove all legacy dummy/sample members (Kanaya, Halimatussadiyah, 2311001..2311040, 2026001..2026010, m-01..m-10)
-          const filtered = parsed.filter(m => {
-            if (!m || !m.nim) return false;
-            const nim = String(m.nim);
-            if (nim.startsWith('23110') || nim.startsWith('20260') || (m.id && m.id.startsWith('m-0')) || m.id === 'm-10') {
-              return false;
-            }
-            return true;
-          });
-          localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(filtered));
-          return filtered;
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [events, setEvents] = useState<AttendanceEvent[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
-    }
-    return initialEvents;
-  });
-
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const filtered = parsed.filter((r: AttendanceRecord) => {
-            if (!r || !r.memberId) return false;
-            const id = String(r.memberId);
-            if (id.startsWith('m-0') || id === 'm-10' || id.includes('23110')) return false;
-            return true;
-          });
-          localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(filtered));
-          return filtered;
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    if (saved) {
-      try {
-        const parsed: Transaction[] = JSON.parse(saved);
-        const filtered = parsed.filter(t => !t.id.startsWith('tx-'));
-        return filtered;
-      } catch (e) {
-        return initialTransactions;
-      }
-    }
-    return initialTransactions;
-  });
-
-  const [duesRecords, setDuesRecords] = useState<MonthlyDuesRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.DUES);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const filtered = parsed.filter((d: MonthlyDuesRecord) => {
-            if (!d || !d.memberId) return false;
-            const id = String(d.memberId);
-            if (id.startsWith('m-0') || id === 'm-10' || id.includes('23110')) return false;
-            return true;
-          });
-          localStorage.setItem(STORAGE_KEYS.DUES, JSON.stringify(filtered));
-          return filtered;
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [budgetPlans, setBudgetPlans] = useState<BudgetPlan[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.BUDGET);
-    return saved ? JSON.parse(saved) : initialBudgetPlans;
-  });
+  const [config, setConfig] = useState<OrganizationConfig>(initialOrganizationConfig);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [events, setEvents] = useState<AttendanceEvent[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [duesRecords, setDuesRecords] = useState<MonthlyDuesRecord[]>([]);
+  const [budgetPlans, setBudgetPlans] = useState<BudgetPlan[]>([]);
 
   // 10 Sekbid OSIS State
-  const [sekbidList, setSekbidList] = useState<SekbidDetail[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SEKBID_LIST);
-    return saved ? JSON.parse(saved) : initialSekbidList;
-  });
-
-  const [sekbidMembers, setSekbidMembers] = useState<SekbidMember[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SEKBID_MEMBERS);
-    return saved ? JSON.parse(saved) : initialSekbidMembers;
-  });
+  const [sekbidList, setSekbidList] = useState<SekbidDetail[]>(initialSekbidList);
+  const [sekbidMembers, setSekbidMembers] = useState<SekbidMember[]>([]);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentStoredSession());
@@ -268,9 +89,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Google Sheets Database State
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(() => {
-    return localStorage.getItem(STORAGE_KEYS.LAST_SYNCED) || null;
-  });
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   const [isPullingFromDb, setIsPullingFromDb] = useState(false);
   const [isPushingToDb, setIsPushingToDb] = useState(false);
@@ -395,49 +214,6 @@ export default function App() {
     };
   }, []);
 
-  // Sync to LocalStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
-  }, [config]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(members));
-  }, [members]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(attendanceRecords));
-  }, [attendanceRecords]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-  }, [transactions]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DUES, JSON.stringify(duesRecords));
-  }, [duesRecords]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.BUDGET, JSON.stringify(budgetPlans));
-  }, [budgetPlans]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SEKBID_LIST, JSON.stringify(sekbidList));
-  }, [sekbidList]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SEKBID_MEMBERS, JSON.stringify(sekbidMembers));
-  }, [sekbidMembers]);
-
-  useEffect(() => {
-    if (lastSyncedAt) {
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNCED, lastSyncedAt);
-    }
-  }, [lastSyncedAt]);
-
   // ==========================================
   // Attendance Handlers with Feedback
   // ==========================================
@@ -490,7 +266,10 @@ export default function App() {
         return [...prev, updatedRecord];
       }
     });
-    saveAttendanceRecord(updatedRecord).catch(err => console.warn('NeonDB update attendance failed:', err));
+    saveAttendanceRecord(updatedRecord).catch(err => {
+      console.error('NeonDB update attendance failed:', err);
+      showToast('Gagal Menyimpan Presensi', err.message || 'Perubahan presensi belum tersimpan ke NeonDB', 'error');
+    });
 
     showToast(
       'Status Presensi Diperbarui',
@@ -507,7 +286,10 @@ export default function App() {
       qrCodeToken: `${config.shortName}-${Date.now().toString(36).toUpperCase()}`,
     };
     setEvents(prev => [newEvent, ...prev]);
-    saveEvent(newEvent).catch(err => console.warn('NeonDB save event failed:', err));
+    saveEvent(newEvent).catch(err => {
+      console.error('NeonDB save event failed:', err);
+      showToast('Gagal Menyimpan Kegiatan', err.message || 'Kegiatan belum tersimpan ke NeonDB', 'error');
+    });
 
     triggerActionFeedback(
       'Sesi Kegiatan Dibuat!',
@@ -545,7 +327,8 @@ export default function App() {
 
     // Auto-sync single transaction to NeonDB
     saveTransaction(newTx).catch(err => {
-      console.warn('NeonDB save transaction failed:', err);
+      console.error('NeonDB save transaction failed:', err);
+      showToast('Gagal Menyimpan Transaksi', err.message || 'Transaksi belum tersimpan ke NeonDB', 'error');
     });
   };
 
@@ -627,7 +410,10 @@ export default function App() {
         notes: notes || label,
       };
     });
-    bulkSaveDues(duesToSave).catch(err => console.warn('NeonDB payment dues failed:', err));
+    Promise.all(duesToSave.map(record => saveDuesRecord(record))).catch(err => {
+      console.error('NeonDB payment dues failed:', err);
+      showToast('Gagal Menyimpan Iuran', err.message || 'Perubahan iuran belum tersimpan ke NeonDB', 'error');
+    });
 
     // Auto-record into General Ledger (Buku Kas Masuk)
     handleSaveTransaction({
@@ -676,7 +462,10 @@ export default function App() {
       id: `m-${Date.now()}`,
     };
     setMembers(prev => [...prev, newMember]);
-    saveMember(newMember).catch(err => console.warn('NeonDB save member failed:', err));
+    saveMember(newMember).catch(err => {
+      console.error('NeonDB save member failed:', err);
+      showToast('Gagal Menyimpan Anggota', err.message || 'Anggota belum tersimpan ke NeonDB', 'error');
+    });
 
     // Also create 12 months due records for the new member
     const newDues: MonthlyDuesRecord[] = [];
@@ -691,7 +480,10 @@ export default function App() {
       });
     }
     setDuesRecords(prev => [...prev, ...newDues]);
-    bulkSaveDues(newDues).catch(err => console.warn('NeonDB save dues failed:', err));
+    Promise.all(newDues.map(record => saveDuesRecord(record))).catch(err => {
+      console.error('NeonDB save dues failed:', err);
+      showToast('Gagal Menyimpan Iuran', err.message || 'Data iuran belum tersimpan ke NeonDB', 'error');
+    });
 
     triggerActionFeedback(
       'Anggota Berhasil Ditambahkan!',
@@ -713,7 +505,10 @@ export default function App() {
     }));
 
     setMembers(prev => [...prev, ...createdMembers]);
-    bulkSaveMembers(createdMembers).catch(err => console.warn('NeonDB bulk save members failed:', err));
+    Promise.all(createdMembers.map(member => saveMember(member))).catch(err => {
+      console.error('NeonDB bulk save members failed:', err);
+      showToast('Gagal Menyimpan Anggota', err.message || 'Data anggota belum tersimpan ke NeonDB', 'error');
+    });
 
     // Create 12 months due records for each imported member
     const newDues: MonthlyDuesRecord[] = [];
@@ -730,7 +525,10 @@ export default function App() {
       }
     });
     setDuesRecords(prev => [...prev, ...newDues]);
-    bulkSaveDues(newDues).catch(err => console.warn('NeonDB bulk save dues failed:', err));
+    Promise.all(newDues.map(record => saveDuesRecord(record))).catch(err => {
+      console.error('NeonDB bulk save dues failed:', err);
+      showToast('Gagal Menyimpan Iuran', err.message || 'Data iuran belum tersimpan ke NeonDB', 'error');
+    });
 
     triggerActionFeedback(
       'Import Data Berhasil!',
@@ -745,7 +543,10 @@ export default function App() {
 
   const handleUpdateMember = (id: string, updated: Partial<Member>) => {
     const existing = members.find(m => m.id === id);
-    if (existing) saveMember({ ...existing, ...updated }).catch(err => console.warn('NeonDB update member failed:', err));
+    if (existing) saveMember({ ...existing, ...updated }).catch(err => {
+      console.error('NeonDB update member failed:', err);
+      showToast('Gagal Mengubah Anggota', err.message || 'Perubahan anggota belum tersimpan ke NeonDB', 'error');
+    });
     setMembers(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
     showToast('Data Anggota Diperbarui', 'Perubahan biodata anggota berhasil disimpan', 'success', 'user');
   };
@@ -783,13 +584,19 @@ export default function App() {
       id: `sm-${Date.now()}`,
     };
     setSekbidMembers(prev => [...prev, newMember]);
-    saveSekbidMember(newMember).catch(err => console.warn('NeonDB save sekbid member failed:', err));
+    saveSekbidMember(newMember).catch(err => {
+      console.error('NeonDB save sekbid member failed:', err);
+      showToast('Gagal Menyimpan Pengurus', err.message || 'Pengurus belum tersimpan ke NeonDB', 'error');
+    });
     showToast('Pengurus Sekbid Ditambahkan', `${newMember.name} ditambahkan ke Sekbid ${newMember.sekbidId}`, 'success');
   };
 
   const handleUpdateSekbidMember = (id: string, updated: Partial<SekbidMember>) => {
     const existing = sekbidMembers.find(m => m.id === id);
-    if (existing) saveSekbidMember({ ...existing, ...updated }).catch(err => console.warn('NeonDB update sekbid member failed:', err));
+    if (existing) saveSekbidMember({ ...existing, ...updated }).catch(err => {
+      console.error('NeonDB update sekbid member failed:', err);
+      showToast('Gagal Mengubah Pengurus', err.message || 'Perubahan pengurus belum tersimpan ke NeonDB', 'error');
+    });
     setSekbidMembers(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
     showToast('Data Pengurus Sekbid Diperbarui', 'Perubahan anggota sekbid tersimpan', 'success');
   };
@@ -807,9 +614,8 @@ export default function App() {
 
   const handleResetSekbidData = () => {
     setSekbidList(initialSekbidList);
-    setSekbidMembers(initialSekbidMembers);
-    localStorage.removeItem(STORAGE_KEYS.SEKBID_LIST);
-    localStorage.removeItem(STORAGE_KEYS.SEKBID_MEMBERS);
+    setSekbidMembers([]);
+    bulkSaveSekbidMembers([]).catch(err => console.warn('NeonDB reset sekbid failed:', err));
     showToast('Data Sekbid Direset', 'Struktur 10 Sekbid dikembalikan ke setelan awal OSIS', 'info');
   };
 
@@ -822,7 +628,10 @@ export default function App() {
       id: `rab-${Date.now()}`,
     };
     setBudgetPlans(prev => [...prev, newPlan]);
-    saveBudgetPlan(newPlan).catch(err => console.warn('NeonDB save budget failed:', err));
+    saveBudgetPlan(newPlan).catch(err => {
+      console.error('NeonDB save budget failed:', err);
+      showToast('Gagal Menyimpan RAB', err.message || 'RAB belum tersimpan ke NeonDB', 'error');
+    });
     triggerActionFeedback(
       'RAB Berhasil Ditambahkan!',
       `Anggaran "${newPlan.prokerName}" sebesar ${formatRupiah(newPlan.allocatedBudget)} telah dicatat.`,
@@ -912,6 +721,11 @@ export default function App() {
     }
   };
 
+  // NeonDB is the single source of truth. Load it once when the app opens.
+  useEffect(() => {
+    void handleFetchFromDb();
+  }, []);
+
   const handleSyncToDb = async () => {
     try {
       setIsPushingToDb(true);
@@ -949,30 +763,27 @@ export default function App() {
   const handleClearAllMembers = () => {
     setMembers([]);
     setDuesRecords([]);
-    localStorage.removeItem(STORAGE_KEYS.MEMBERS);
-    localStorage.removeItem(STORAGE_KEYS.DUES);
+    Promise.all([bulkSaveMembers([]), bulkSaveDues([])]).catch(err => console.warn('NeonDB clear members failed:', err));
     showToast('Data Anggota Dikosongkan', 'Seluruh biodata anggota dan catatan iuran telah dibersihkan.', 'info');
   };
 
   const handleClearAllFinance = () => {
     setTransactions([]);
     setDuesRecords([]);
-    localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
-    localStorage.removeItem(STORAGE_KEYS.DUES);
+    Promise.all([bulkSaveTransactions([]), bulkSaveDues([])]).catch(err => console.warn('NeonDB clear finance failed:', err));
     showToast('Data Buku Kas Dikosongkan', 'Seluruh transaksi kas dan catatan iuran dibersihkan. Saldo kembali ke Rp 0.', 'info');
   };
 
   const handleClearAllAttendance = () => {
     setEvents([]);
     setAttendanceRecords([]);
-    localStorage.removeItem(STORAGE_KEYS.EVENTS);
-    localStorage.removeItem(STORAGE_KEYS.ATTENDANCE);
+    Promise.all([bulkSaveEvents([]), bulkSaveAttendance([])]).catch(err => console.warn('NeonDB clear attendance failed:', err));
     showToast('Riwayat Presensi Dikosongkan', 'Seluruh sesi kegiatan dan riwayat presensi telah dibersihkan.', 'info');
   };
 
   const handleClearAllBudget = () => {
     setBudgetPlans([]);
-    localStorage.removeItem(STORAGE_KEYS.BUDGET);
+    bulkSaveBudget([]).catch(err => console.warn('NeonDB clear budget failed:', err));
     showToast('Perancangan RAB Dikosongkan', 'Seluruh rencana anggaran belanja telah dibersihkan.', 'info');
   };
 
@@ -986,8 +797,16 @@ export default function App() {
     setBudgetPlans([]);
     setSekbidMembers([]);
     setSekbidList(initialSekbidList);
-    localStorage.clear();
-    localStorage.setItem(STORAGE_KEYS.DB_VERSION, 'v3_skarlakes');
+    Promise.all([
+      saveConfig(initialOrganizationConfig),
+      bulkSaveMembers([]),
+      bulkSaveEvents([]),
+      bulkSaveAttendance([]),
+      bulkSaveTransactions([]),
+      bulkSaveDues([]),
+      bulkSaveBudget([]),
+      bulkSaveSekbidMembers([]),
+    ]).catch(err => console.warn('NeonDB total reset failed:', err));
     showToast('Database Total Direset', 'Semua data telah dikosongkan. Aplikasi bersih kembali.', 'info');
   };
 

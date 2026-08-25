@@ -32,7 +32,6 @@ let cachedAccessToken: string | null = null;
 
 const STORAGE_KEYS = {
   ADMIN_ACCOUNTS: 'org_app_admin_accounts_v1',
-  AUTH_SESSION: 'org_app_current_auth_session_v1',
 };
 
 export interface AdminAccount {
@@ -124,23 +123,12 @@ export function deleteAdminAccount(id: string): void {
 }
 
 export function getCurrentStoredSession(): User | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
-    if (raw) {
-      return JSON.parse(raw) as User;
-    }
-  } catch (e) {
-    console.warn('Failed to load auth session:', e);
-  }
+  // Sessions are intentionally memory-only.
   return null;
 }
 
 export function setStoredSession(user: User | null): void {
-  if (user) {
-    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
-  }
+  // Do not persist authentication sessions in browser storage.
 }
 
 function createSyntheticUser(account: AdminAccount): User {
@@ -162,13 +150,8 @@ function createSyntheticUser(account: AdminAccount): User {
     toJSON: () => ({}),
     phoneNumber: null,
     providerId: 'password',
-  } as unknown as User;
-
-  // Store custom profile
-  const customProfile: UserCustomProfile = {
     role: account.role,
-  };
-  localStorage.setItem(`user_profile_${account.id}`, JSON.stringify(customProfile));
+  } as unknown as User;
 
   return syntheticUser;
 }
@@ -177,23 +160,13 @@ export const initAuth = (
   onAuthSuccess?: (user: User, token: string | null) => void,
   onAuthFailure?: () => void
 ) => {
-  // Check stored local session first
-  const storedSession = getCurrentStoredSession();
-  if (storedSession && onAuthSuccess) {
-    onAuthSuccess(storedSession, cachedAccessToken);
-  }
-
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
       setStoredSession(user);
       if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
     } else {
-      // If no Firebase user and no stored local session
-      const currentStored = getCurrentStoredSession();
-      if (!currentStored) {
-        cachedAccessToken = null;
-        if (onAuthFailure) onAuthFailure();
-      }
+      cachedAccessToken = null;
+      if (onAuthFailure) onAuthFailure();
     }
   });
 };
@@ -260,11 +233,6 @@ export const registerWithEmail = async (
     await updateProfile(user, {
       displayName: displayName.trim(),
     });
-
-    const customProfile: UserCustomProfile = {
-      role,
-    };
-    localStorage.setItem(`user_profile_${user.uid}`, JSON.stringify(customProfile));
 
     // Also add to Admin accounts list so Administrator can manage it
     addAdminAccount({
