@@ -37,7 +37,7 @@ async function startServer() {
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
-      service: 'OSIS Management Server',
+      service: 'OSIS SKARLAKES Management Server',
       sheetsConfigured: !!getGoogleSheetsApiKey()
     });
   });
