@@ -1045,7 +1045,7 @@ export default function App() {
             onAddMember={handleAddSekbidMember}
             onUpdateMember={handleUpdateSekbidMember}
             onDeleteMember={handleDeleteSekbidMember}
-            onUpdateSekbid={handleUpdateSekbidDetail}
+            onUpdateSekbidDetail={handleUpdateSekbidDetail}
             onResetData={handleResetSekbidData}
             onSyncSheets={handleSyncToDb}
             isSyncing={isPushingToDb}

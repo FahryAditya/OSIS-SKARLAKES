@@ -175,11 +175,14 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   onAddMember,
   onUpdateMember,
   onDeleteMember,
+  onUpdateSekbid,
   onUpdateSekbidDetail,
   onResetSekbidData,
   onSyncSheets,
   isSyncing = false,
 }) => {
+  // Keep the legacy prop working while using the explicit callback name in App.
+  const updateSekbidDetail = onUpdateSekbidDetail || onUpdateSekbid;
   // Navigation / Filter State
   const [selectedSekbidId, setSelectedSekbidId] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -404,13 +407,13 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
 
   const handleSaveSekbidDetail = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingSekbid || !onUpdateSekbidDetail) return;
+    if (!editingSekbid || !updateSekbidDetail) return;
     const prokerArray = sekbidProkers
       .split('\n')
       .map((p) => p.trim())
       .filter((p) => p.length > 0);
 
-    onUpdateSekbidDetail(editingSekbid.id, {
+    updateSekbidDetail(editingSekbid.id, {
       title: sekbidTitle.trim(),
       shortTitle: sekbidShortTitle.trim(),
       description: sekbidDesc.trim(),
