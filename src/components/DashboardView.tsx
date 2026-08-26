@@ -168,14 +168,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center space-x-3 sm:space-x-4">
-            {config.logoUrl ? (
-              <img
-                src={config.logoUrl}
-                alt={`Logo ${config.shortName}`}
-                referrerPolicy="no-referrer"
-                className="w-12 h-12 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-lg border-2 border-white/20 bg-white/10 shrink-0"
-              />
-            ) : null}
+            <img
+              src={config.logoUrl || '/logo.png'}
+              alt={`Logo ${config.shortName}`}
+              referrerPolicy="no-referrer"
+              className="w-12 h-12 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-lg border-2 border-white/20 bg-white/10 shrink-0"
+            />
             <div className="min-w-0">
               <div className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 mb-1 sm:mb-2">
                 Periode Kepengurusan {config.period}

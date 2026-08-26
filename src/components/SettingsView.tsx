@@ -163,7 +163,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateConfig(formData);
+    const updatedConfig = {
+      ...formData,
+      logoUrl: formData.logoUrl?.trim() || '/logo.png',
+    };
+    onUpdateConfig(updatedConfig);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
@@ -332,23 +336,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="sm:col-span-2">
               <label className="block font-semibold text-slate-700 mb-1">URL Logo Resmi Organisasi</label>
               <div className="flex items-center space-x-3">
-                {formData.logoUrl && (
-                  <img 
-                    src={formData.logoUrl} 
-                    alt="Preview Logo" 
-                    referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0 bg-white"
-                  />
-                )}
+                <img 
+                  src={formData.logoUrl || '/logo.png'} 
+                  alt="Preview Logo" 
+                  referrerPolicy="no-referrer"
+                  className="w-12 h-12 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0 bg-white"
+                />
                 <input
-                  type="url"
-                  placeholder="https://..."
-                  value={formData.logoUrl}
+                  type="text"
+                  placeholder="/logo.png"
+                  value={formData.logoUrl || '/logo.png'}
                   onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono text-xs"
                 />
               </div>
-              <p className="text-2xs text-slate-400 mt-1">Logo ini akan disematkan di navbar, kop kwitansi, LPJ resmi, portal presensi, dan dashboard.</p>
+              <p className="text-2xs text-slate-400 mt-1">Logo ini tetap tersimpan permanen (`/logo.png`) dan disematkan di navbar, kop kwitansi, LPJ resmi, portal presensi, dan dashboard tanpa terhapus saat mengubah sistem iuran.</p>
             </div>
           </div>
         </div>

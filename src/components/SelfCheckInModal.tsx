@@ -175,18 +175,12 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
         {/* Header */}
         <div className="px-5 py-4 bg-gradient-to-r from-indigo-700 via-indigo-800 to-slate-900 text-white flex items-center justify-between shadow-md">
           <div className="flex items-center space-x-3">
-            {config.logoUrl ? (
-              <img 
-                src={config.logoUrl} 
-                alt={`Logo ${config.shortName}`} 
-                referrerPolicy="no-referrer"
-                className="w-10 h-10 rounded-xl object-cover border border-white/20 shadow-xs shrink-0 bg-white" 
-              />
-            ) : (
-              <div className="p-2 bg-white/10 rounded-lg">
-                <QrCode className="w-5 h-5" />
-              </div>
-            )}
+            <img 
+              src={config.logoUrl || '/logo.png'} 
+              alt={`Logo ${config.shortName}`} 
+              referrerPolicy="no-referrer"
+              className="w-10 h-10 rounded-xl object-cover border border-white/20 shadow-xs shrink-0 bg-white" 
+            />
             <div>
               <h2 className="text-base sm:text-lg font-bold leading-tight">Portal Presensi Mandiri</h2>
               <p className="text-2xs sm:text-xs text-indigo-200 font-medium truncate max-w-xs sm:max-w-md">

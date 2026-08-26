@@ -75,14 +75,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           {/* Header Kop Kwitansi Sederhana */}
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <div className="flex items-center space-x-3">
-              {config.logoUrl && (
-                <img 
-                  src={config.logoUrl} 
-                  alt={`Logo ${config.shortName}`} 
-                  referrerPolicy="no-referrer"
-                  className="w-10 h-10 rounded-lg object-cover border border-slate-200 shadow-2xs shrink-0" 
-                />
-              )}
+              <img 
+                src={config.logoUrl || '/logo.png'} 
+                alt={`Logo ${config.shortName}`} 
+                referrerPolicy="no-referrer"
+                className="w-10 h-10 rounded-lg object-cover border border-slate-200 shadow-2xs shrink-0" 
+              />
               <div>
                 <h1 className="text-xs font-black tracking-tight uppercase text-slate-900 leading-snug">
                   {config.shortName || config.name}

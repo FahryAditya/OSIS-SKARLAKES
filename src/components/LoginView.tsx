@@ -142,16 +142,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
         {/* Branding & Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 mb-4 shadow-xl">
-            {config.logoUrl ? (
-              <img 
-                src={config.logoUrl} 
-                alt="Logo Organisasi" 
-                className="w-12 h-12 rounded-xl object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <School className="w-8 h-8 text-indigo-400" />
-            )}
+            <img 
+              src={config.logoUrl || '/logo.png'} 
+              alt="Logo Organisasi" 
+              className="w-12 h-12 rounded-xl object-cover"
+              referrerPolicy="no-referrer"
+            />
           </div>
           
           <h1 className="text-2xl font-black text-white tracking-tight">

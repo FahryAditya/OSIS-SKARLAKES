@@ -141,14 +141,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           
           {/* Official Kop Surat */}
           <div className="border-b-4 border-double border-slate-900 pb-4 mb-6 flex items-center justify-between gap-4">
-            {config.logoUrl && (
-              <img 
-                src={config.logoUrl} 
-                alt={`Logo ${config.shortName}`} 
-                referrerPolicy="no-referrer"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0" 
-              />
-            )}
+            <img 
+              src={config.logoUrl || '/logo.png'} 
+              alt={`Logo ${config.shortName}`} 
+              referrerPolicy="no-referrer"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0" 
+            />
             <div className="text-center flex-1">
               <h1 className="text-lg sm:text-xl font-black uppercase tracking-wider text-slate-900">
                 {config.name}
@@ -159,9 +157,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 Sekretariat: {config.address} • Kontak: {config.contactEmail} / {config.contactPhone}
               </p>
             </div>
-            {config.logoUrl && (
-              <div className="w-16 sm:w-20 hidden sm:block shrink-0" />
-            )}
+            <div className="w-16 sm:w-20 hidden sm:block shrink-0" />
           </div>
 
           {/* Document Title */}
@@ -286,14 +282,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           
           {/* Kop Surat */}
           <div className="border-b-4 border-double border-slate-900 pb-4 mb-6 flex items-center justify-between gap-4">
-            {config.logoUrl && (
-              <img 
-                src={config.logoUrl} 
-                alt={`Logo ${config.shortName}`} 
-                referrerPolicy="no-referrer"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0" 
-              />
-            )}
+            <img 
+              src={config.logoUrl || '/logo.png'} 
+              alt={`Logo ${config.shortName}`} 
+              referrerPolicy="no-referrer"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0" 
+            />
             <div className="text-center flex-1">
               <h1 className="text-lg sm:text-xl font-black uppercase tracking-wider text-slate-900">
                 {config.name}
@@ -301,9 +295,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               <p className="text-xs font-bold text-indigo-700 tracking-wide mt-0.5">{config.tagline}</p>
               <p className="text-2xs text-slate-600">{config.institution} • Periode {config.period}</p>
             </div>
-            {config.logoUrl && (
-              <div className="w-16 sm:w-20 hidden sm:block shrink-0" />
-            )}
+            <div className="w-16 sm:w-20 hidden sm:block shrink-0" />
           </div>
 
           {/* Title */}

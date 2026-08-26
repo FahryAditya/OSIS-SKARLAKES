@@ -70,7 +70,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Session and profile data are memory-only; synthetic admin users expose role directly.
   const userRole = (currentUser as (User & { role?: string }) | null)?.role || 'Pengurus OSIS';
-
   const userDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Pengurus OSIS';
 
   return (
@@ -82,18 +81,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             
             {/* Brand and Organization info */}
             <div className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer shrink-0" onClick={() => setActiveTab('dashboard')}>
-              {config.logoUrl ? (
-                <img 
-                  src={config.logoUrl} 
-                  alt={`Logo ${config.shortName}`} 
-                  referrerPolicy="no-referrer"
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-xs border border-slate-200 bg-white"
-                />
-              ) : (
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs font-bold text-sm sm:text-lg">
-                  {config.shortName.slice(0, 2).toUpperCase() || <Building2 className="w-5 h-5" />}
-                </div>
-              )}
+              <img 
+                src={config.logoUrl || '/logo.png'} 
+                alt={`Logo ${config.shortName}`} 
+                referrerPolicy="no-referrer"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-xs border border-slate-200 bg-white"
+              />
               <div className="min-w-0">
                 <div className="flex items-center space-x-1.5">
                   <span className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
@@ -185,42 +178,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="absolute right-0 mt-2 w-60 sm:w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
                       <div className="px-4 py-3 border-b border-slate-100">
                         <div className="flex items-center space-x-2">
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                            Akun Terverifikasi
-                          </span>
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <p className="text-xs font-bold text-slate-900 truncate">{userDisplayName}</p>
                         </div>
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 mt-1 truncate">
-                          {userDisplayName}
-                        </p>
-                        <p className="text-[11px] text-slate-500 font-mono truncate">
-                          {currentUser.email}
-                        </p>
+                        <p className="text-2xs text-slate-500 font-mono mt-0.5 truncate">{currentUser.email}</p>
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-3xs rounded-md">
+                          {userRole}
+                        </span>
                       </div>
 
-                      <div className="p-1">
+                      <div className="py-1">
                         <button
-                          type="button"
                           onClick={() => {
                             setIsUserMenuOpen(false);
-                            onOpenAuthModal();
+                            setActiveTab('pengaturan');
                           }}
-                          className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center space-x-2 transition-colors"
+                          className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium flex items-center space-x-2"
                         >
-                          <UserIcon className="w-4 h-4 text-slate-400" />
-                          <span>Ganti Akun / Masuk Akun Lain</span>
+                          <Settings className="w-4 h-4 text-slate-500" />
+                          <span>Pengaturan Organisasi</span>
                         </button>
+                      </div>
 
+                      <div className="border-t border-slate-100 pt-1">
                         <button
-                          type="button"
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             onLogout();
                           }}
-                          className="w-full text-left px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center space-x-2 transition-colors"
+                          className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 font-bold flex items-center space-x-2"
                         >
-                          <LogOut className="w-4 h-4 text-rose-500" />
-                          <span>Keluar (Logout)</span>
+                          <LogOut className="w-4 h-4 text-rose-600" />
+                          <span>Keluar Akun (Logout)</span>
                         </button>
                       </div>
                     </div>
@@ -230,21 +219,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   id="btn-nav-login"
                   onClick={onOpenAuthModal}
-                  className="inline-flex items-center h-8 sm:h-9 px-2.5 sm:px-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-xs transition-all active:scale-[0.98]"
+                  className="inline-flex items-center h-8 sm:h-9 px-3 sm:px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors shadow-2xs space-x-1.5"
                 >
-                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
-                  <span>Masuk</span>
+                  <LogIn className="w-3.5 h-3.5 text-indigo-300" />
+                  <span>Login Pengurus</span>
                 </button>
               )}
 
             </div>
-
           </div>
         </div>
 
-        {/* Desktop & Mobile Top Scrollable Navigation tabs */}
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 border-t border-slate-100 relative">
-          <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto py-1.5 sm:py-2 scrollbar-none touch-pan-x" aria-label="Tabs">
+        {/* Navigation Tabs Bar */}
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 border-t border-slate-100 bg-slate-50/50">
+          <nav className="flex space-x-1 overflow-x-auto py-1.5 scrollbar-none">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -253,46 +241,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={item.id}
                   id={`nav-tab-${item.id}`}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center whitespace-nowrap px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold rounded-xl transition-all shrink-0 ${
+                  className={`px-3 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center space-x-2 shrink-0 ${
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-2xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  {item.label}
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
         </div>
       </header>
-
-      {/* Mobile Fixed Bottom Navigation Bar (For smartphones < 640px) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1 px-2 flex justify-around items-center sm:hidden shadow-lg no-print">
-        {[
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'sekbid', label: '10 Sekbid', icon: Layers },
-          { id: 'absensi', label: 'Presensi', icon: CalendarCheck },
-          { id: 'keuangan', label: 'Buku Kas', icon: Wallet },
-          { id: 'anggota', label: 'Anggota', icon: Users },
-        ].map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={`mobile-bottom-${item.id}`}
-              onClick={() => setActiveTab(item.id as ActiveTab)}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-                isActive ? 'text-indigo-600 font-bold scale-105' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5 leading-none">{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
     </>
   );
 };
