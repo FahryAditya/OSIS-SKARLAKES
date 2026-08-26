@@ -427,6 +427,34 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div>
+              <label className="block font-semibold text-slate-700 mb-1">Bulan Mulai Pembayaran Iuran *</label>
+              <select
+                value={formData.duesStartMonth || 8}
+                onChange={(e) => setFormData({ ...formData, duesStartMonth: parseInt(e.target.value, 10) })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              >
+                {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((n, i) => (
+                  <option key={i+1} value={i+1}>{n} ({i+1})</option>
+                ))}
+              </select>
+              <p className="text-2xs text-slate-400 mt-1">Bulan pertama di mana iuran kas wajib dibayar. Matriks iuran akan dimulai dari bulan ini.</p>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Bulan Akhir Pembayaran Iuran *</label>
+              <select
+                value={formData.duesEndMonth || 7}
+                onChange={(e) => setFormData({ ...formData, duesEndMonth: parseInt(e.target.value, 10) })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              >
+                {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((n, i) => (
+                  <option key={i+1} value={i+1}>{n} ({i+1})</option>
+                ))}
+              </select>
+              <p className="text-2xs text-slate-400 mt-1">Bulan terakhir periode iuran. Misal: Ags-Jul untuk tahun ajaran penuh (12 bulan lintas tahun).</p>
+            </div>
+
+            <div>
               <label className="block font-semibold text-slate-700 mb-1">Nama Bank / Dompet Digital</label>
               <input
                 type="text"

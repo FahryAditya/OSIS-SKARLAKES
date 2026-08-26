@@ -143,6 +143,8 @@ export interface OrganizationConfig {
   defaultMonthlyDue: number; // e.g. 10000 (Rp 10.000)
   defaultWeeklyDue?: number; // e.g. 2500 (Rp 2.500)
   duesMode?: 'bulanan' | 'mingguan';
+  duesStartMonth?: number; // 1-12, default 8 (Agustus)
+  duesEndMonth?: number;   // 1-12, default 7 (Juli tahun berikutnya)
   bankName: string;
   bankAccountNumber: string;
   bankAccountHolder: string;

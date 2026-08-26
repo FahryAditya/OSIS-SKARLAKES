@@ -20,6 +20,8 @@ export const initialOrganizationConfig: OrganizationConfig = {
   defaultMonthlyDue: 10000, // Rp 10.000 / bulan
   defaultWeeklyDue: 2500, // Rp 2.500 / minggu
   duesMode: 'mingguan',
+  duesStartMonth: 8,  // Mulai Agustus
+  duesEndMonth: 7,    // Sampai Juli (tahun ajaran berikutnya)
   bankName: 'Bank Mandiri / QRIS Kas OSIS SKARLAKES',
   bankAccountNumber: '',
   bankAccountHolder: 'BENDAHARA OSIS SKARLAKES',

@@ -53,24 +53,42 @@ export const DuesView: React.FC<DuesViewProps> = ({
   const [divisionFilter, setDivisionFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
   
+  // Dues period from config (default: Aug=8 to Jul=7)
+  const startMonth = config.duesStartMonth || 8;
+  const endMonth = config.duesEndMonth || 7;
+
+  // Build ordered month list starting from startMonth
+  const buildMonthRange = (start: number, end: number): number[] => {
+    const result: number[] = [];
+    let m = start;
+    // Allow crossing year boundary (e.g. Aug→Jul: 8,9,10,11,12,1,2,3,4,5,6,7)
+    for (let i = 0; i < 12; i++) {
+      result.push(m);
+      if (m === end) break;
+      m = m === 12 ? 1 : m + 1;
+    }
+    return result;
+  };
+  const months = buildMonthRange(startMonth, endMonth);
+
+  // Current month for highlighting overdue
+  const currentMonth = new Date().getMonth() + 1;
+
   // Frequency View Mode: 'bulanan' | 'mingguan'
   const [viewMode, setViewMode] = useState<'bulanan' | 'mingguan'>(config.duesMode || 'mingguan');
-  const [selectedMonthForWeekly, setSelectedMonthForWeekly] = useState<number>(3); // Default March (3)
+  const [selectedMonthForWeekly, setSelectedMonthForWeekly] = useState<number>(startMonth);
 
   // Payment Modal State
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([3]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([startMonth]);
   const [selectedWeeks, setSelectedWeeks] = useState<number[]>([1]);
   const [payType, setPayType] = useState<'bulanan' | 'mingguan'>('mingguan');
   const [customAmountInput, setCustomAmountInput] = useState<number>(config.defaultWeeklyDue || 2500);
   const [paymentMethod, setPaymentMethod] = useState<'Tunai' | 'Transfer Bank' | 'QRIS / E-Wallet'>('Transfer Bank');
   const [paymentNotes, setPaymentNotes] = useState('');
 
-  // Months array 1..12
-  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   const weeksInMonth = [1, 2, 3, 4];
-  const currentMonth = 3; // March
 
   const getRecord = (memberId: string, month: number) => {
     return duesRecords.find(d => d.memberId === memberId && d.month === month && (!d.week || d.week === 0) && d.year === 2026);
@@ -98,7 +116,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
         const rec = getRecord(member.id, m);
         return !rec || rec.status === 'belum';
       });
-      setSelectedMonths(unpaid.slice(0, 1));
+      setSelectedMonths(unpaid.slice(0, 1).length > 0 ? unpaid.slice(0, 1) : [startMonth]);
     }
     setIsPayModalOpen(true);
   };
@@ -175,7 +193,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
 
     setIsPayModalOpen(false);
     setSelectedMember(null);
-    setSelectedMonths([3]);
+    setSelectedMonths([startMonth]);
     setSelectedWeeks([1]);
   };
 
@@ -183,7 +201,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
   const handleSendWhatsAppReminder = (member: Member) => {
     const unpaidMonths = months.filter(m => {
       const rec = getRecord(member.id, m);
-      return m <= currentMonth && (!rec || rec.status === 'belum');
+      return (!rec || rec.status === 'belum');
     });
 
     if (unpaidMonths.length === 0) {
@@ -244,48 +262,50 @@ export const DuesView: React.FC<DuesViewProps> = ({
 
     if (statusFilter === 'all') return matchesSearch && matchesDiv;
 
-    const hasUnpaidQ1 = months.some(month => {
+    const hasUnpaid = months.some(month => {
       const rec = getRecord(m.id, month);
-      return month <= currentMonth && (!rec || rec.status === 'belum');
+      return !rec || rec.status === 'belum';
     });
 
-    if (statusFilter === 'unpaid') return matchesSearch && matchesDiv && hasUnpaidQ1;
-    if (statusFilter === 'paid') return matchesSearch && matchesDiv && !hasUnpaidQ1;
+    if (statusFilter === 'unpaid') return matchesSearch && matchesDiv && hasUnpaid;
+    if (statusFilter === 'paid') return matchesSearch && matchesDiv && !hasUnpaid;
 
     return matchesSearch && matchesDiv;
   });
 
-  // Dynamic global dues statistics calculated directly from database records
+  // Dynamic global dues statistics calculated from config month range
   const paidRecords = duesRecords.filter(r => r.status === 'lunas');
   const totalCollectedAmount = paidRecords.reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-  const totalExpectedQ1 = members.length * 3;
-  let paidSlotsQ1 = 0;
+  // Stats based on the configured dues period (startMonth - endMonth)
+  const periodLabel = `${getMonthName(startMonth)} - ${getMonthName(endMonth)}`;
+  const totalExpectedPeriod = members.length * months.length;
+  let paidSlotsPeriod = 0;
   members.forEach(m => {
-    for (let month = 1; month <= 3; month++) {
+    months.forEach(month => {
       const mRec = getRecord(m.id, month);
       if (mRec?.status === 'lunas') {
-        paidSlotsQ1++;
+        paidSlotsPeriod++;
       } else {
         let paidWeeksCount = 0;
         for (let w = 1; w <= 4; w++) {
-          const wRec = duesRecords.find(d => d.memberId === m.id && d.month === month && d.week === w && d.year === 2026 && d.status === 'lunas');
+          const wRec = duesRecords.find(d => d.memberId === m.id && d.month === month && d.week === w && d.status === 'lunas');
           if (wRec) paidWeeksCount++;
         }
         if (paidWeeksCount >= 4) {
-          paidSlotsQ1++;
+          paidSlotsPeriod++;
         } else if (paidWeeksCount > 0) {
-          paidSlotsQ1 += paidWeeksCount / 4;
+          paidSlotsPeriod += paidWeeksCount / 4;
         }
       }
-    }
+    });
   });
 
-  const unpaidSlotsQ1 = Math.max(0, totalExpectedQ1 - Math.floor(paidSlotsQ1));
-  const unpaidRecordsQ1 = duesRecords.filter(r => r.month <= 3 && r.status === 'belum' && (!r.week || r.week === 0));
-  const totalArrearsAmount = unpaidRecordsQ1.length > 0 
-    ? unpaidRecordsQ1.reduce((sum, r) => sum + Number(r.amount || 0), 0)
-    : unpaidSlotsQ1 * (config.defaultMonthlyDue || 10000);
+  const unpaidSlotsPeriod = Math.max(0, totalExpectedPeriod - Math.floor(paidSlotsPeriod));
+  const unpaidRecordsPeriod = duesRecords.filter(r => months.includes(r.month) && r.status === 'belum' && (!r.week || r.week === 0));
+  const totalArrearsAmount = unpaidRecordsPeriod.length > 0 
+    ? unpaidRecordsPeriod.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+    : unpaidSlotsPeriod * (config.defaultMonthlyDue || 10000);
 
   return (
     <div className="space-y-6">
@@ -326,25 +346,25 @@ export const DuesView: React.FC<DuesViewProps> = ({
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tunggakan Q1 (Jan - Mar)</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tunggakan Periode ({periodLabel})</span>
           <p className="text-2xl font-black text-rose-700 mt-2 font-mono">{formatRupiah(totalArrearsAmount)}</p>
           <p className="text-2xs text-slate-500 mt-1">
-            {unpaidSlotsQ1} slot iuran belum terbayar
+            {unpaidSlotsPeriod} slot iuran belum terbayar
           </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kepatuhan Iuran Q1</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kepatuhan Iuran Periode</span>
           <div className="flex items-baseline space-x-2 mt-2">
             <p className="text-2xl font-black text-slate-900 font-mono">
-              {totalExpectedQ1 > 0 ? Math.round((paidSlotsQ1 / totalExpectedQ1) * 100) : 100}%
+              {totalExpectedPeriod > 0 ? Math.round((paidSlotsPeriod / totalExpectedPeriod) * 100) : 100}%
             </p>
-            <span className="text-xs text-slate-500 font-semibold">({Math.floor(paidSlotsQ1)}/{totalExpectedQ1})</span>
+            <span className="text-xs text-slate-500 font-semibold">({Math.floor(paidSlotsPeriod)}/{totalExpectedPeriod})</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2">
             <div 
               className="bg-indigo-600 h-1.5 rounded-full" 
-              style={{ width: `${totalExpectedQ1 > 0 ? Math.round((paidSlotsQ1 / totalExpectedQ1) * 100) : 100}%` }} 
+              style={{ width: `${totalExpectedPeriod > 0 ? Math.round((paidSlotsPeriod / totalExpectedPeriod) * 100) : 100}%` }} 
             />
           </div>
         </div>
@@ -374,7 +394,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>Mode Bayar Bulanan (Jan - Des)</span>
+            <span>Mode Bayar Bulanan ({getMonthName(startMonth).slice(0,3)} - {getMonthName(endMonth).slice(0,3)})</span>
           </button>
         </div>
 
@@ -388,7 +408,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
             >
               {months.map(m => (
                 <option key={m} value={m}>
-                  {getMonthName(m)} 2026 {m === currentMonth ? '(Bulan Ini)' : ''}
+                  {getMonthName(m)} {new Date().getFullYear()} {m === currentMonth ? '(Bulan Ini)' : ''}
                 </option>
               ))}
             </select>
@@ -439,8 +459,8 @@ export const DuesView: React.FC<DuesViewProps> = ({
               className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-700 focus:ring-2 focus:ring-indigo-500"
             >
               <option value="all">Semua Status</option>
-              <option value="unpaid">Menunggak Q1</option>
-              <option value="paid">Lunas Q1</option>
+              <option value="unpaid">Ada Tunggakan</option>
+              <option value="paid">Lunas Semua</option>
             </select>
           </div>
 
