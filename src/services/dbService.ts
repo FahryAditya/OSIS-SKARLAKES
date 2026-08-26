@@ -12,6 +12,7 @@ import type {
   MonthlyDuesRecord,
   BudgetPlan,
   SekbidMember,
+  SekbidDetail,
 } from '../types';
 
 export interface AllAppData {
@@ -23,6 +24,7 @@ export interface AllAppData {
   duesRecords: MonthlyDuesRecord[];
   budgetPlans: BudgetPlan[];
   sekbidMembers: SekbidMember[];
+  sekbidList: SekbidDetail[] | null;
 }
 
 const API_BASE = '/api/db';
@@ -234,6 +236,13 @@ export async function bulkSaveSekbidMembers(members: SekbidMember[]): Promise<vo
   });
 }
 
+export async function saveSekbidDetails(sekbidList: SekbidDetail[]): Promise<void> {
+  await apiFetch('/sekbid-details', {
+    method: 'POST',
+    body: JSON.stringify({ sekbidList }),
+  });
+}
+
 // ============================================================
 // FULL SYNC (upload all local data to DB in one shot)
 // ============================================================
@@ -247,6 +256,7 @@ export async function syncAllToDb(data: {
   duesRecords: MonthlyDuesRecord[];
   budgetPlans: BudgetPlan[];
   sekbidMembers: SekbidMember[];
+  sekbidList: SekbidDetail[];
 }): Promise<void> {
   await apiFetch('/sync', {
     method: 'POST',

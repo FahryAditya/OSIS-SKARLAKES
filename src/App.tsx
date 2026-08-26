@@ -64,6 +64,7 @@ import {
   saveSekbidMember, 
   deleteSekbidMember, 
   bulkSaveSekbidMembers,
+  saveSekbidDetails,
   syncAllToDb 
 } from './services/dbService';
 import { User } from 'firebase/auth';
@@ -684,13 +685,22 @@ export default function App() {
   };
 
   const handleUpdateSekbidDetail = (id: number, updated: Partial<SekbidDetail>) => {
-    setSekbidList(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
-    showToast('Program Kerja Sekbid Diperbarui', `Informasi Sekbid ${id} berhasil diperbarui`, 'success');
+    const nextSekbidList = sekbidList.map(s => s.id === id ? { ...s, ...updated } : s);
+    setSekbidList(nextSekbidList);
+    saveSekbidDetails(nextSekbidList)
+      .then(() => {
+        showToast('Program Kerja Sekbid Diperbarui', `Informasi Sekbid ${id} berhasil disimpan ke NeonDB`, 'success');
+      })
+      .catch(err => {
+        console.error('NeonDB save sekbid details failed:', err);
+        showToast('Gagal Menyimpan Info Sekbid', err.message || 'Perubahan belum tersimpan ke NeonDB', 'error');
+      });
   };
 
   const handleResetSekbidData = () => {
     setSekbidList(initialSekbidList);
     setSekbidMembers([]);
+    saveSekbidDetails(initialSekbidList).catch(err => console.warn('NeonDB reset sekbid details failed:', err));
     bulkSaveSekbidMembers([]).catch(err => console.warn('NeonDB reset sekbid failed:', err));
     showToast('Data Sekbid Direset', 'Struktur 10 Sekbid dikembalikan ke setelan awal OSIS', 'info');
   };
@@ -776,6 +786,7 @@ export default function App() {
       setDuesRecords(data.duesRecords || []);
       setBudgetPlans(data.budgetPlans || []);
       setSekbidMembers(data.sekbidMembers || []);
+      if (data.sekbidList?.length) setSekbidList(data.sekbidList);
 
       const now = new Date().toISOString();
       setLastSyncedAt(now);
@@ -806,6 +817,7 @@ export default function App() {
         duesRecords,
         budgetPlans,
         sekbidMembers,
+        sekbidList,
       });
 
       const now = new Date().toISOString();
@@ -874,6 +886,7 @@ export default function App() {
       bulkSaveDues([]),
       bulkSaveBudget([]),
       bulkSaveSekbidMembers([]),
+      saveSekbidDetails(initialSekbidList),
     ]).catch(err => console.warn('NeonDB total reset failed:', err));
     showToast('Database Total Direset', 'Semua data telah dikosongkan. Aplikasi bersih kembali.', 'info');
   };

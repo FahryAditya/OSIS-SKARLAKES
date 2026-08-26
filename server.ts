@@ -233,6 +233,7 @@ async function startServer() {
         duesRecords: dues.map(mapDues),
         budgetPlans: budget.map(mapBudget),
         sekbidMembers: sekbidMembers.map(mapSekbid),
+        sekbidList: configRows[0]?.data?.sekbidList || null,
       });
     } catch (err: any) {
       console.error('DB fetch all error:', err);
@@ -244,11 +245,29 @@ async function startServer() {
   app.post('/api/db/config', async (req: Request, res: Response) => {
     try {
       const config = req.body;
+      const existing = await sql`SELECT data FROM org_config ORDER BY id DESC LIMIT 1`;
+      const mergedConfig = existing[0]?.data?.sekbidList && !config.sekbidList
+        ? { ...config, sekbidList: existing[0].data.sekbidList }
+        : config;
       await sql`
-        INSERT INTO org_config (data) VALUES (${JSON.stringify(config)})
+        INSERT INTO org_config (data) VALUES (${JSON.stringify(mergedConfig)})
         ON CONFLICT DO NOTHING
       `;
-      await sql`UPDATE org_config SET data = ${JSON.stringify(config)}, updated_at = NOW() WHERE id = (SELECT id FROM org_config ORDER BY id DESC LIMIT 1)`;
+      await sql`UPDATE org_config SET data = ${JSON.stringify(mergedConfig)}, updated_at = NOW() WHERE id = (SELECT id FROM org_config ORDER BY id DESC LIMIT 1)`;
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/db/sekbid-details', async (req: Request, res: Response) => {
+    try {
+      const { sekbidList } = req.body;
+      if (!Array.isArray(sekbidList)) return res.status(400).json({ error: 'sekbidList harus berupa array.' });
+      const existing = await sql`SELECT data FROM org_config ORDER BY id DESC LIMIT 1`;
+      const data = { ...(existing[0]?.data || {}), sekbidList };
+      await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(data)}) ON CONFLICT DO NOTHING`;
+      await sql`UPDATE org_config SET data=${JSON.stringify(data)}, updated_at=NOW() WHERE id=(SELECT id FROM org_config ORDER BY id DESC LIMIT 1)`;
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -590,15 +609,16 @@ async function startServer() {
   // POST /api/db/sync - Full sync all data at once
   app.post('/api/db/sync', async (req: Request, res: Response) => {
     try {
-      const { config, members, events, attendanceRecords, transactions, duesRecords, budgetPlans, sekbidMembers } = req.body;
+      const { config, members, events, attendanceRecords, transactions, duesRecords, budgetPlans, sekbidMembers, sekbidList } = req.body;
 
       // Upsert config
       if (config) {
-        const existing = await sql`SELECT id FROM org_config LIMIT 1`;
+        const existing = await sql`SELECT id, data FROM org_config LIMIT 1`;
+        const mergedConfig = sekbidList ? { ...config, sekbidList } : (existing[0]?.data?.sekbidList ? { ...config, sekbidList: existing[0].data.sekbidList } : config);
         if (existing.length === 0) {
-          await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(config)})`;
+          await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(mergedConfig)})`;
         } else {
-          await sql`UPDATE org_config SET data = ${JSON.stringify(config)}, updated_at = NOW()`;
+          await sql`UPDATE org_config SET data = ${JSON.stringify(mergedConfig)}, updated_at = NOW()`;
         }
       }
 

@@ -126,18 +126,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         duesRecords: dues.map(mapDues),
         budgetPlans: budget.map(mapBudget),
         sekbidMembers: sekbidMembers.map(mapSekbid),
+        sekbidList: configRows[0]?.data?.sekbidList || null,
       });
     }
 
     // ── POST /api/db/config ─────────────────────────────────────────────────
     if (segment === 'config' && req.method === 'POST') {
       const config = req.body;
-      const existing = await sql`SELECT id FROM org_config LIMIT 1`;
+      const existing = await sql`SELECT id, data FROM org_config LIMIT 1`;
+      const mergedConfig = existing[0]?.data?.sekbidList && !config.sekbidList
+        ? { ...config, sekbidList: existing[0].data.sekbidList }
+        : config;
       if (existing.length === 0) {
-        await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(config)})`;
+        await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(mergedConfig)})`;
       } else {
-        await sql`UPDATE org_config SET data = ${JSON.stringify(config)}, updated_at = NOW()`;
+        await sql`UPDATE org_config SET data = ${JSON.stringify(mergedConfig)}, updated_at = NOW()`;
       }
+      return res.json({ success: true });
+    }
+
+    if (segment === 'sekbid-details' && req.method === 'POST') {
+      const { sekbidList } = req.body;
+      if (!Array.isArray(sekbidList)) return res.status(400).json({ error: 'sekbidList harus berupa array.' });
+      const existing = await sql`SELECT id, data FROM org_config LIMIT 1`;
+      const data = { ...(existing[0]?.data || {}), sekbidList };
+      if (existing.length === 0) await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(data)})`;
+      else await sql`UPDATE org_config SET data=${JSON.stringify(data)}, updated_at=NOW()`;
       return res.json({ success: true });
     }
 
@@ -293,12 +307,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── SYNC (full upsert) ───────────────────────────────────────────────────
     if (segment === 'sync' && req.method === 'POST') {
-      const { config, members, events, attendanceRecords, transactions, duesRecords, budgetPlans, sekbidMembers } = req.body;
+      const { config, members, events, attendanceRecords, transactions, duesRecords, budgetPlans, sekbidMembers, sekbidList } = req.body;
 
       if (config) {
-        const existing = await sql`SELECT id FROM org_config LIMIT 1`;
-        if (existing.length === 0) await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(config)})`;
-        else await sql`UPDATE org_config SET data=${JSON.stringify(config)},updated_at=NOW()`;
+        const existing = await sql`SELECT id, data FROM org_config LIMIT 1`;
+        const mergedConfig = sekbidList ? { ...config, sekbidList } : (existing[0]?.data?.sekbidList ? { ...config, sekbidList: existing[0].data.sekbidList } : config);
+        if (existing.length === 0) await sql`INSERT INTO org_config (data) VALUES (${JSON.stringify(mergedConfig)})`;
+        else await sql`UPDATE org_config SET data=${JSON.stringify(mergedConfig)},updated_at=NOW()`;
       }
       for (const m of members || []) {
         await sql`INSERT INTO members (id,nim,name,division,role,phone,email,join_date,is_active,kelas,avatar_url) VALUES (${m.id},${m.nim},${m.name},${m.division},${m.role},${m.phone},${m.email},${m.joinDate},${m.isActive},${m.kelas||null},${m.avatarUrl||null}) ON CONFLICT (id) DO UPDATE SET nim=EXCLUDED.nim,name=EXCLUDED.name,division=EXCLUDED.division,role=EXCLUDED.role,phone=EXCLUDED.phone,email=EXCLUDED.email,join_date=EXCLUDED.join_date,is_active=EXCLUDED.is_active,kelas=EXCLUDED.kelas,avatar_url=EXCLUDED.avatar_url`;
