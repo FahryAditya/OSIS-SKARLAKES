@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Printer, CheckCircle, ShieldCheck } from 'lucide-react';
+import { X, Printer, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { OrganizationConfig, MonthlyDuesRecord, Member } from '../types';
 import { formatRupiah, formatDateIndo, getMonthName } from '../utils/formatters';
 
@@ -36,132 +36,124 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const amount = customDetails?.amount || dueRecord?.amount || config.defaultMonthlyDue;
   const paymentDate = customDetails?.date || dueRecord?.paymentDate || new Date().toISOString().split('T')[0];
   const paymentMethod = customDetails?.paymentMethod || dueRecord?.paymentMethod || 'Transfer / Tunai';
-  const description = customDetails?.description || (dueRecord ? `Pembayaran Iuran Kas Bulanan (${getMonthName(dueRecord.month)} ${dueRecord.year})` : 'Iuran Kas Organisasi');
+  const description = customDetails?.description || (dueRecord ? `Pembayaran Iuran Kas (${getMonthName(dueRecord.month)} ${dueRecord.year})` : 'Iuran Kas Organisasi');
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 my-auto animate-in fade-in zoom-in-95 duration-150">
         
         {/* Modal Toolbar (hidden when printing) */}
-        <div className="px-6 py-3.5 bg-slate-800 text-white flex items-center justify-between no-print">
+        <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between no-print border-b border-slate-800">
           <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            <span className="font-semibold text-sm">Bukti Pembayaran / Kwitansi Resmi</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="font-bold text-xs sm:text-sm">Kwitansi Pembayaran Kas</span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5">
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition-colors"
+              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center space-x-1 transition-colors shadow-2xs"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Cetak Kwitansi</span>
+              <span>Cetak</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Official Printable Receipt Document */}
-        <div className="p-8 bg-white border-8 border-slate-100 m-2 rounded-xl text-slate-900">
+        {/* Compact Digital Receipt Card */}
+        <div className="p-5 bg-white text-slate-900 space-y-4">
           
-          {/* Header Kop Kwitansi */}
-          <div className="border-b-2 border-slate-900 pb-4 mb-4 flex items-start justify-between">
-            <div className="flex items-start space-x-3">
+          {/* Header Kop Kwitansi Sederhana */}
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div className="flex items-center space-x-3">
               {config.logoUrl && (
                 <img 
                   src={config.logoUrl} 
                   alt={`Logo ${config.shortName}`} 
                   referrerPolicy="no-referrer"
-                  className="w-14 h-14 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0" 
+                  className="w-10 h-10 rounded-lg object-cover border border-slate-200 shadow-2xs shrink-0" 
                 />
               )}
               <div>
-                <h1 className="text-base font-extrabold tracking-tight uppercase text-slate-900">
-                  {config.name}
+                <h1 className="text-xs font-black tracking-tight uppercase text-slate-900 leading-snug">
+                  {config.shortName || config.name}
                 </h1>
-                <p className="text-xs font-semibold text-indigo-700">{config.tagline}</p>
-                <p className="text-2xs text-slate-500">{config.institution} • Periode {config.period}</p>
-                <p className="text-2xs text-slate-500">{config.address}</p>
+                <p className="text-3xs text-slate-500 font-medium">Periode {config.period}</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="inline-block border-2 border-indigo-600 px-3 py-1 rounded-md text-xs font-bold font-mono text-indigo-900 bg-indigo-50">
-                KWITANSI PEMBAYARAN
-              </div>
-              <p className="text-2xs text-slate-500 font-mono mt-1">No: {receiptNumber}</p>
+              <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-3xs font-extrabold font-mono text-indigo-900 block">
+                BUKTI RESMI
+              </span>
+              <p className="text-3xs text-slate-400 font-mono mt-0.5">#{receiptNumber}</p>
             </div>
           </div>
 
-          {/* Body Receipt Details */}
-          <div className="space-y-3 text-xs leading-relaxed">
-            <div className="flex border-b border-slate-100 pb-2">
-              <span className="w-36 font-semibold text-slate-600">Telah Diterima Dari</span>
-              <span className="mr-2 font-bold">:</span>
-              <span className="flex-1 font-bold text-slate-900">{payerName} ({memberNim})</span>
+          {/* Details Table */}
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Penyetor</span>
+              <span className="font-bold text-slate-900 text-right">{payerName}</span>
             </div>
 
-            <div className="flex border-b border-slate-100 pb-2">
-              <span className="w-36 font-semibold text-slate-600">Divisi / Jabatan</span>
-              <span className="mr-2 font-bold">:</span>
-              <span className="flex-1 text-slate-800">{division}</span>
-            </div>
-
-            <div className="flex border-b border-slate-100 pb-2">
-              <span className="w-36 font-semibold text-slate-600">Guna Membayar</span>
-              <span className="mr-2 font-bold">:</span>
-              <span className="flex-1 text-slate-800">{description}</span>
-            </div>
-
-            <div className="flex border-b border-slate-100 pb-2">
-              <span className="w-36 font-semibold text-slate-600">Metode Pembayaran</span>
-              <span className="mr-2 font-bold">:</span>
-              <span className="flex-1 text-slate-800">{paymentMethod}</span>
-            </div>
-
-            <div className="flex border-b border-slate-100 pb-2">
-              <span className="w-36 font-semibold text-slate-600">Tanggal Transaksi</span>
-              <span className="mr-2 font-bold">:</span>
-              <span className="flex-1 text-slate-800">{formatDateIndo(paymentDate)}</span>
-            </div>
-
-            {/* Total Highlight */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between my-4">
-              <div>
-                <p className="text-2xs uppercase tracking-wider text-slate-500 font-bold">Jumlah Total Diterima</p>
-                <p className="text-lg font-extrabold text-emerald-700 font-mono">{formatRupiah(amount)}</p>
+            {memberNim !== '-' && (
+              <div className="flex justify-between py-1 border-b border-slate-100">
+                <span className="text-slate-500 font-medium">NIM / Sekbid</span>
+                <span className="text-slate-800 font-medium text-right">{memberNim} &bull; {division}</span>
               </div>
-              <div className="border-2 border-emerald-600 px-3 py-1 rounded-lg text-emerald-700 font-black text-xs uppercase tracking-widest bg-emerald-50 flex items-center space-x-1">
-                <CheckCircle className="w-4 h-4" />
-                <span>LUNAS</span>
-              </div>
+            )}
+
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Keterangan</span>
+              <span className="text-slate-800 font-medium text-right max-w-[200px] truncate">{description}</span>
             </div>
 
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Metode</span>
+              <span className="text-slate-800 font-semibold text-right">{paymentMethod}</span>
+            </div>
+
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Tanggal</span>
+              <span className="text-slate-800 font-medium text-right">{formatDateIndo(paymentDate)}</span>
+            </div>
+          </div>
+
+          {/* Amount Badge Banner */}
+          <div className="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
+            <div>
+              <p className="text-3xs uppercase tracking-wider text-emerald-800 font-bold">Total Pembayaran</p>
+              <p className="text-base sm:text-lg font-black text-emerald-700 font-mono mt-0.5">{formatRupiah(amount)}</p>
+            </div>
+            <div className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-black text-xs uppercase tracking-wider flex items-center space-x-1 shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+              <span>LUNAS</span>
+            </div>
           </div>
 
           {/* Signatures */}
-          <div className="mt-8 pt-4 border-t border-slate-200 grid grid-cols-2 text-center text-xs">
+          <div className="pt-2 border-t border-slate-100 grid grid-cols-2 text-center text-xs gap-2">
             <div>
-              <p className="text-slate-500 mb-12">Penyetor,</p>
-              <p className="font-bold underline text-slate-800">{payerName}</p>
-              <p className="text-2xs text-slate-500">{memberNim !== '-' ? `NIM. ${memberNim}` : 'Anggota'}</p>
+              <p className="text-3xs text-slate-400 mb-6">Penyetor,</p>
+              <p className="font-bold text-slate-800 text-2xs truncate">{payerName}</p>
             </div>
             <div>
-              <p className="text-slate-500 mb-12">Bendahara Penerima,</p>
-              <p className="font-bold underline text-slate-800">{config.treasurerName}</p>
-              <p className="text-2xs text-slate-500">Bendahara {config.shortName}</p>
+              <p className="text-3xs text-slate-400 mb-6">Bendahara,</p>
+              <p className="font-bold text-slate-800 text-2xs truncate">{config.treasurerName || 'Bendahara OSIS'}</p>
             </div>
           </div>
 
-          <div className="mt-6 text-center text-2xs text-slate-400 font-mono">
-            *** Dokumen tanda terima sah diterbitkan secara digital oleh {config.name} ***
+          <div className="text-center text-3xs text-slate-400 font-mono pt-1">
+            Diterbitkan secara digital oleh {config.shortName || 'OSIS'}
           </div>
 
         </div>

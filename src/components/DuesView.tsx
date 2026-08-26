@@ -35,7 +35,9 @@ interface DuesViewProps {
     paymentMethod: 'Tunai' | 'Transfer Bank' | 'QRIS / E-Wallet', 
     notes?: string,
     customAmount?: number,
-    customLabel?: string
+    customLabel?: string,
+    weeksToPay?: number[],
+    selectedMonthForWeeks?: number
   ) => void;
   onViewReceipt: (dueRecord: MonthlyDuesRecord, member: Member) => void;
 }
@@ -71,7 +73,15 @@ export const DuesView: React.FC<DuesViewProps> = ({
   const currentMonth = 3; // March
 
   const getRecord = (memberId: string, month: number) => {
-    return duesRecords.find(d => d.memberId === memberId && d.month === month && d.year === 2026);
+    return duesRecords.find(d => d.memberId === memberId && d.month === month && (!d.week || d.week === 0) && d.year === 2026);
+  };
+
+  const getWeeklyRecord = (memberId: string, month: number, week: number) => {
+    const wRec = duesRecords.find(d => d.memberId === memberId && d.month === month && d.week === week && d.year === 2026);
+    if (wRec && wRec.status === 'lunas') return wRec;
+    const mRec = getRecord(memberId, month);
+    if (mRec && mRec.status === 'lunas') return mRec;
+    return wRec || null;
   };
 
   const handleOpenPayment = (member: Member) => {
@@ -141,14 +151,27 @@ export const DuesView: React.FC<DuesViewProps> = ({
       customLabel = `Iuran Bulanan (${mNames})`;
     }
 
-    onPayDues(
-      selectedMember.id, 
-      selectedMonths, 
-      paymentMethod, 
-      paymentNotes.trim() || undefined,
-      amountToSave,
-      customLabel
-    );
+    if (payType === 'mingguan') {
+      onPayDues(
+        selectedMember.id, 
+        selectedMonths, 
+        paymentMethod, 
+        paymentNotes.trim() || undefined,
+        amountToSave,
+        customLabel,
+        selectedWeeks,
+        selectedMonthForWeekly
+      );
+    } else {
+      onPayDues(
+        selectedMember.id, 
+        selectedMonths, 
+        paymentMethod, 
+        paymentNotes.trim() || undefined,
+        amountToSave,
+        customLabel
+      );
+    }
 
     setIsPayModalOpen(false);
     setSelectedMember(null);
@@ -232,23 +255,37 @@ export const DuesView: React.FC<DuesViewProps> = ({
     return matchesSearch && matchesDiv;
   });
 
-  // Calculate global dues statistics
-  let totalPaidSlots = 0;
-  duesRecords.forEach(r => {
-    if (r.status === 'lunas') totalPaidSlots++;
-  });
+  // Dynamic global dues statistics calculated directly from database records
+  const paidRecords = duesRecords.filter(r => r.status === 'lunas');
+  const totalCollectedAmount = paidRecords.reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
   const totalExpectedQ1 = members.length * 3;
   let paidSlotsQ1 = 0;
   members.forEach(m => {
     for (let month = 1; month <= 3; month++) {
-      const rec = getRecord(m.id, month);
-      if (rec?.status === 'lunas') paidSlotsQ1++;
+      const mRec = getRecord(m.id, month);
+      if (mRec?.status === 'lunas') {
+        paidSlotsQ1++;
+      } else {
+        let paidWeeksCount = 0;
+        for (let w = 1; w <= 4; w++) {
+          const wRec = duesRecords.find(d => d.memberId === m.id && d.month === month && d.week === w && d.year === 2026 && d.status === 'lunas');
+          if (wRec) paidWeeksCount++;
+        }
+        if (paidWeeksCount >= 4) {
+          paidSlotsQ1++;
+        } else if (paidWeeksCount > 0) {
+          paidSlotsQ1 += paidWeeksCount / 4;
+        }
+      }
     }
   });
 
-  const totalCollectedAmount = totalPaidSlots * config.defaultMonthlyDue;
-  const totalArrearsAmount = (totalExpectedQ1 - paidSlotsQ1) * config.defaultMonthlyDue;
+  const unpaidSlotsQ1 = Math.max(0, totalExpectedQ1 - Math.floor(paidSlotsQ1));
+  const unpaidRecordsQ1 = duesRecords.filter(r => r.month <= 3 && r.status === 'belum' && (!r.week || r.week === 0));
+  const totalArrearsAmount = unpaidRecordsQ1.length > 0 
+    ? unpaidRecordsQ1.reduce((sum, r) => sum + Number(r.amount || 0), 0)
+    : unpaidSlotsQ1 * (config.defaultMonthlyDue || 10000);
 
   return (
     <div className="space-y-6">
@@ -284,7 +321,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Iuran Terkumpul</span>
           <p className="text-2xl font-black text-emerald-700 mt-2 font-mono">{formatRupiah(totalCollectedAmount)}</p>
           <p className="text-2xs text-slate-500 mt-1">
-            Dari total {totalPaidSlots} bulan terbayar sepanjang tahun
+            Dari {paidRecords.length} catatan pembayaran kas terdaftar
           </p>
         </div>
 
@@ -292,7 +329,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tunggakan Q1 (Jan - Mar)</span>
           <p className="text-2xl font-black text-rose-700 mt-2 font-mono">{formatRupiah(totalArrearsAmount)}</p>
           <p className="text-2xs text-slate-500 mt-1">
-            {totalExpectedQ1 - paidSlotsQ1} slot iuran belum terbayar
+            {unpaidSlotsQ1} slot iuran belum terbayar
           </p>
         </div>
 
@@ -300,14 +337,14 @@ export const DuesView: React.FC<DuesViewProps> = ({
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kepatuhan Iuran Q1</span>
           <div className="flex items-baseline space-x-2 mt-2">
             <p className="text-2xl font-black text-slate-900 font-mono">
-              {Math.round((paidSlotsQ1 / (totalExpectedQ1 || 1)) * 100)}%
+              {totalExpectedQ1 > 0 ? Math.round((paidSlotsQ1 / totalExpectedQ1) * 100) : 100}%
             </p>
-            <span className="text-xs text-slate-500 font-semibold">({paidSlotsQ1}/{totalExpectedQ1})</span>
+            <span className="text-xs text-slate-500 font-semibold">({Math.floor(paidSlotsQ1)}/{totalExpectedQ1})</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2">
             <div 
               className="bg-indigo-600 h-1.5 rounded-full" 
-              style={{ width: `${Math.round((paidSlotsQ1 / (totalExpectedQ1 || 1)) * 100)}%` }} 
+              style={{ width: `${totalExpectedQ1 > 0 ? Math.round((paidSlotsQ1 / totalExpectedQ1) * 100) : 100}%` }} 
             />
           </div>
         </div>
@@ -445,9 +482,9 @@ export const DuesView: React.FC<DuesViewProps> = ({
                 </tr>
               ) : (
                 filteredMembers.map((member) => {
-                  let paidMonthsCount = 0;
-                  const monthRec = getRecord(member.id, selectedMonthForWeekly);
-                  const isMonthLunas = monthRec?.status === 'lunas';
+                  const memberPaidTotal = duesRecords
+                    .filter(r => r.memberId === member.id && r.status === 'lunas')
+                    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
                   return (
                     <tr key={member.id} className="hover:bg-slate-50 transition-colors">
@@ -465,7 +502,6 @@ export const DuesView: React.FC<DuesViewProps> = ({
                         months.map((m) => {
                           const rec = getRecord(member.id, m);
                           const isLunas = rec?.status === 'lunas';
-                          if (isLunas) paidMonthsCount++;
 
                           return (
                             <td key={m} className={`py-2 px-1 text-center border-r border-slate-200 ${m === currentMonth ? 'bg-indigo-50/40' : ''}`}>
@@ -501,12 +537,19 @@ export const DuesView: React.FC<DuesViewProps> = ({
                         })
                       ) : (
                         weeksInMonth.map((w) => {
+                          const wRec = getWeeklyRecord(member.id, selectedMonthForWeekly, w);
+                          const isWeekLunas = wRec?.status === 'lunas';
+
                           return (
                             <td key={w} className="py-2 px-2 text-center border-r border-slate-200 bg-slate-50/30">
-                              {isMonthLunas ? (
-                                <span className="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-3xs rounded-md">
-                                  ✓ Lunas
-                                </span>
+                              {isWeekLunas ? (
+                                <button
+                                  onClick={() => onViewReceipt(wRec, member)}
+                                  title={`Minggu ${w} Lunas (${wRec.paymentMethod || 'Kas'}). Klik lihat kwitansi.`}
+                                  className="inline-flex items-center px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-3xs rounded-md transition-colors shadow-2xs"
+                                >
+                                  ✓ Mgg {w}
+                                </button>
                               ) : (
                                 <button
                                   onClick={() => {
@@ -529,7 +572,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
 
                       {/* Total Paid */}
                       <td className="py-2.5 px-3 text-center border-r border-slate-200 font-mono font-bold text-slate-800 whitespace-nowrap">
-                        {formatRupiah(paidMonthsCount * config.defaultMonthlyDue)}
+                        {formatRupiah(memberPaidTotal)}
                       </td>
 
                       {/* Action Buttons */}

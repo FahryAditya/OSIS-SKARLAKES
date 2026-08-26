@@ -341,76 +341,152 @@ export default function App() {
     paymentMethod: 'Tunai' | 'Transfer Bank' | 'QRIS / E-Wallet', 
     notes?: string,
     customAmount?: number,
-    customLabel?: string
+    customLabel?: string,
+    weeksToPay?: number[],
+    selectedMonthForWeeks?: number
   ) => {
     const member = members.find(m => m.id === memberId);
     if (!member) return;
 
     const receiptNum = `KAS-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
     const todayStr = new Date().toISOString().split('T')[0];
+    const isWeekly = weeksToPay && weeksToPay.length > 0 && selectedMonthForWeeks !== undefined;
+
     const totalAmount = customAmount !== undefined && customAmount > 0 
       ? customAmount 
-      : monthsToPay.length * (config.defaultMonthlyDue || 10000);
+      : isWeekly 
+        ? weeksToPay.length * (config.defaultWeeklyDue || 2500)
+        : monthsToPay.length * (config.defaultMonthlyDue || 10000);
 
-    const monthNames = monthsToPay.length > 0 
-      ? monthsToPay.map(m => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][m - 1]).join(', ')
-      : 'Mingguan';
-    
-    const label = customLabel || `Iuran Kas (${monthNames})`;
+    let label = customLabel;
+    if (!label) {
+      if (isWeekly) {
+        const mName = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][(selectedMonthForWeeks || 1) - 1];
+        label = `Iuran Mingguan (Mgg ${weeksToPay.join(', ')} - ${mName})`;
+      } else {
+        const monthNames = monthsToPay.map(m => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][m - 1]).join(', ');
+        label = `Iuran Kas (${monthNames})`;
+      }
+    }
 
-    // Update dues records
+    const updatedDuesRecords: MonthlyDuesRecord[] = [];
+
     setDuesRecords(prev => {
       const existing = [...prev];
-      monthsToPay.forEach(m => {
-        const idx = existing.findIndex(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m);
-        if (idx >= 0) {
-          existing[idx] = {
-            ...existing[idx],
+
+      if (isWeekly && selectedMonthForWeeks) {
+        // Pay specific weeks for a month
+        const m = selectedMonthForWeeks;
+        const perWeekAmount = customAmount ? Math.round(customAmount / weeksToPay.length) : (config.defaultWeeklyDue || 2500);
+
+        weeksToPay.forEach(w => {
+          const idx = existing.findIndex(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && rec.week === w);
+          const newRecord: MonthlyDuesRecord = {
+            id: idx >= 0 ? existing[idx].id : `due-${memberId}-2026-${m}-w${w}-${Date.now()}`,
+            memberId,
+            year: 2026,
+            month: m,
+            week: w,
+            amount: perWeekAmount,
             status: 'lunas',
-            amount: customAmount ? Math.round(customAmount / (monthsToPay.length || 1)) : existing[idx].amount,
             paymentDate: todayStr,
             paymentMethod,
             receiptNumber: receiptNum,
             notes: notes || label,
           };
-        } else {
-          existing.push({
-            id: `due-${memberId}-2026-${m}-${Date.now()}`,
+          if (idx >= 0) {
+            existing[idx] = newRecord;
+          } else {
+            existing.push(newRecord);
+          }
+          updatedDuesRecords.push(newRecord);
+        });
+
+        // Check if all 4 weeks are now lunas for this month
+        let paidWeeksCount = 0;
+        for (let w = 1; w <= 4; w++) {
+          if (existing.some(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && rec.week === w && rec.status === 'lunas')) {
+            paidWeeksCount++;
+          }
+        }
+        if (paidWeeksCount >= 4) {
+          const mIdx = existing.findIndex(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && (!rec.week || rec.week === 0));
+          const monthRecord: MonthlyDuesRecord = {
+            id: mIdx >= 0 ? existing[mIdx].id : `due-${memberId}-2026-${m}-${Date.now()}`,
             memberId,
             year: 2026,
             month: m,
-            amount: customAmount ? Math.round(customAmount / (monthsToPay.length || 1)) : config.defaultMonthlyDue,
+            amount: config.defaultMonthlyDue || 10000,
+            status: 'lunas',
+            paymentDate: todayStr,
+            paymentMethod,
+            receiptNumber: receiptNum,
+            notes: `Lunas 4 Minggu - ${label}`,
+          };
+          if (mIdx >= 0) {
+            existing[mIdx] = monthRecord;
+          } else {
+            existing.push(monthRecord);
+          }
+          updatedDuesRecords.push(monthRecord);
+        }
+
+      } else {
+        // Pay full monthly mode
+        monthsToPay.forEach(m => {
+          const idx = existing.findIndex(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && (!rec.week || rec.week === 0));
+          const perMonthAmount = customAmount ? Math.round(customAmount / (monthsToPay.length || 1)) : (existing[idx]?.amount || config.defaultMonthlyDue);
+          const monthRecord: MonthlyDuesRecord = {
+            id: idx >= 0 ? existing[idx].id : `due-${memberId}-2026-${m}-${Date.now()}`,
+            memberId,
+            year: 2026,
+            month: m,
+            amount: perMonthAmount,
             status: 'lunas',
             paymentDate: todayStr,
             paymentMethod,
             receiptNumber: receiptNum,
             notes: notes || label,
-          });
-        }
-      });
+          };
+
+          if (idx >= 0) {
+            existing[idx] = monthRecord;
+          } else {
+            existing.push(monthRecord);
+          }
+          updatedDuesRecords.push(monthRecord);
+
+          // Also mark all 4 weeks as lunas
+          for (let w = 1; w <= 4; w++) {
+            const wIdx = existing.findIndex(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && rec.week === w);
+            const weekRecord: MonthlyDuesRecord = {
+              id: wIdx >= 0 ? existing[wIdx].id : `due-${memberId}-2026-${m}-w${w}-${Date.now()}`,
+              memberId,
+              year: 2026,
+              month: m,
+              week: w,
+              amount: Math.round(perMonthAmount / 4),
+              status: 'lunas',
+              paymentDate: todayStr,
+              paymentMethod,
+              receiptNumber: receiptNum,
+              notes: notes || label,
+            };
+            if (wIdx >= 0) {
+              existing[wIdx] = weekRecord;
+            } else {
+              existing.push(weekRecord);
+            }
+            updatedDuesRecords.push(weekRecord);
+          }
+        });
+      }
+
       return existing;
     });
 
-    const duesToSave = monthsToPay.map(month => {
-      const existing = duesRecords.find(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === month);
-      return {
-        ...(existing || {
-          id: `due-${memberId}-2026-${month}-${Date.now()}`,
-          memberId,
-          year: 2026,
-          month,
-          amount: config.defaultMonthlyDue,
-          status: 'belum' as const,
-        }),
-        amount: customAmount ? Math.round(customAmount / (monthsToPay.length || 1)) : (existing?.amount || config.defaultMonthlyDue),
-        status: 'lunas' as const,
-        paymentDate: todayStr,
-        paymentMethod,
-        receiptNumber: receiptNum,
-        notes: notes || label,
-      };
-    });
-    Promise.all(duesToSave.map(record => saveDuesRecord(record))).catch(err => {
+    // Save updated records to database
+    Promise.all(updatedDuesRecords.map(record => saveDuesRecord(record))).catch(err => {
       console.error('NeonDB payment dues failed:', err);
       showToast('Gagal Menyimpan Iuran', err.message || 'Perubahan iuran belum tersimpan ke NeonDB', 'error');
     });
