@@ -924,7 +924,6 @@ export default function App() {
             });
           }}
         />
-
         {/* Modal Presensi Mandiri (dapat diakses anggota via scan QR tanpa perlu login admin) */}
         {isSelfCheckInOpen && (
           <SelfCheckInModal
@@ -968,55 +967,6 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      {/* NeonDB Database Quick Control Bar */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 text-white border-b border-emerald-500/20 py-2.5 px-4 sm:px-6 lg:px-8 no-print">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <div className="flex items-center space-x-2.5 text-xs">
-            <span className="flex h-2.5 w-2.5 relative shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <div className="flex items-center space-x-1.5 flex-wrap">
-              <span className="font-bold text-emerald-300">Database NeonDB Cloud (PostgreSQL) Aktif:</span>
-              <span className="text-slate-300 font-mono text-2xs bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
-                ep-dark-mouse-azmzhuxs.c-3.ap-southeast-1.aws.neon.tech
-              </span>
-              {lastSyncedAt && (
-                <span className="text-2xs text-slate-400">
-                  (Disinkronkan: {new Date(lastSyncedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 shrink-0">
-            <button
-              type="button"
-              id="btn-quick-pull-db"
-              onClick={handleFetchFromDb}
-              disabled={isPullingFromDb}
-              className="inline-flex items-center px-2.5 py-1 bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-2xs"
-              title="Tarik data terbaru dari NeonDB Cloud"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isPullingFromDb ? 'animate-spin text-emerald-300' : ''}`} />
-              <span>{isPullingFromDb ? 'Memuat Data...' : 'Muat Data DB'}</span>
-            </button>
-
-            <button
-              type="button"
-              id="btn-quick-push-db"
-              onClick={handleSyncToDb}
-              disabled={isPushingToDb}
-              className="inline-flex items-center px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-2xs"
-              title="Kirim dan sinkronkan semua perubahan ke NeonDB Cloud"
-            >
-              <UploadCloud className={`w-3.5 h-3.5 mr-1.5 ${isPushingToDb ? 'animate-bounce text-slate-950' : ''}`} />
-              <span>{isPushingToDb ? 'Menyimpan...' : 'Sinkronkan DB'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main App Content View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-24 sm:pb-12">
         
@@ -1059,72 +1009,6 @@ export default function App() {
             onUpdateMember={handleUpdateSekbidMember}
             onDeleteMember={handleDeleteSekbidMember}
             onUpdateSekbidDetail={handleUpdateSekbidDetail}
-            onResetData={handleResetSekbidData}
-            onSyncSheets={handleSyncToDb}
-            isSyncing={isPushingToDb}
-          />
-        )}
-
-        {activeTab === 'absensi' && (
-          <AttendanceView
-            events={events}
-            records={attendanceRecords}
-            members={members}
-            config={config}
-            onCreateEvent={handleCreateEvent}
-            onUpdateRecordStatus={handleUpdateRecordStatus}
-            onOpenSelfCheckIn={() => setIsSelfCheckInOpen(true)}
-            onPrintReport={() => setActiveTab('laporan')}
-          />
-        )}
-
-        {activeTab === 'keuangan' && (
-          <FinanceView
-            transactions={transactions}
-            budgetPlans={budgetPlans}
-            events={events}
-            config={config}
-            onOpenAddTransaction={(type) => {
-              setQuickTransactionType(type || 'masuk');
-              setIsQuickTransactionOpen(true);
-            }}
-            onViewReceipt={(tx) => {
-              setReceiptModalData({
-                isOpen: true,
-                customDetails: {
-                  receiptNumber: `TX-${tx.id.replace(/[^0-9]/g, '') || Math.floor(1000 + Math.random() * 9000)}`,
-                  payerName: tx.recipientOrPayer,
-                  description: `${tx.category} - ${tx.description}`,
-                  amount: tx.amount,
-                  date: tx.date,
-                  paymentMethod: tx.type === 'masuk' ? 'Kas Masuk Organisasi' : 'Kas Keluar Organisasi',
-                },
-              });
-            }}
-            onPrintReport={() => setActiveTab('laporan')}
-            onAddBudgetPlan={handleAddBudgetPlan}
-          />
-        )}
-
-        {activeTab === 'iuran' && (
-          <DuesView
-            members={members}
-            duesRecords={duesRecords}
-            config={config}
-            onPayDues={handlePayDues}
-            onViewReceipt={(dueRecord, member) => {
-              setReceiptModalData({
-                isOpen: true,
-                dueRecord,
-                member,
-              });
-            }}
-          />
-        )}
-
-        {activeTab === 'laporan' && (
-          <ReportsView
-            config={config}
             transactions={transactions}
             events={events}
             records={attendanceRecords}
