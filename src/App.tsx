@@ -31,6 +31,7 @@ import { QuickTransactionModal } from './components/QuickTransactionModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { AuthModal } from './components/AuthModal';
 import { LoginView } from './components/LoginView';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
   FeedbackNotification, 
   FeedbackToastItem, 
@@ -969,6 +970,7 @@ export default function App() {
 
       {/* Main App Content View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-24 sm:pb-12">
+        <ErrorBoundary key={activeTab}>
         
         {activeTab === 'dashboard' && (
           <DashboardView
@@ -1122,6 +1124,7 @@ export default function App() {
           />
         )}
 
+        </ErrorBoundary>
       </main>
 
       {/* Footer (No-Print) */}

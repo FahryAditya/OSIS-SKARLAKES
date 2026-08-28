@@ -35,31 +35,38 @@ interface ReportsViewProps {
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
   config,
-  transactions,
-  events,
-  records,
-  members,
-  duesRecords,
-  budgetPlans,
+  transactions = [],
+  events = [],
+  records = [],
+  members = [],
+  duesRecords = [],
+  budgetPlans = [],
 }) => {
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const safeEvents = Array.isArray(events) ? events : [];
+  const safeRecords = Array.isArray(records) ? records : [];
+  const safeMembers = Array.isArray(members) ? members : [];
+  const safeDuesRecords = Array.isArray(duesRecords) ? duesRecords : [];
+  const safeBudgetPlans = Array.isArray(budgetPlans) ? budgetPlans : [];
+
   const [reportType, setReportType] = useState<'finance' | 'attendance' | 'ai_insight'>('finance');
 
   // Calculations
-  const totalMasuk = transactions.filter(t => t.type === 'masuk').reduce((sum, t) => sum + t.amount, 0);
-  const totalKeluar = transactions.filter(t => t.type === 'keluar').reduce((sum, t) => sum + t.amount, 0);
+  const totalMasuk = safeTransactions.filter(t => t.type === 'masuk').reduce((sum, t) => sum + t.amount, 0);
+  const totalKeluar = safeTransactions.filter(t => t.type === 'keluar').reduce((sum, t) => sum + t.amount, 0);
   const currentBalance = totalMasuk - totalKeluar;
 
-  const totalHadir = records.filter(r => r.status === 'hadir').length;
-  const totalIzin = records.filter(r => r.status === 'izin').length;
-  const totalSakit = records.filter(r => r.status === 'sakit').length;
-  const totalAlpa = records.filter(r => r.status === 'alpa').length;
-  const overallRate = Math.round((totalHadir / (records.length || 1)) * 100);
+  const totalHadir = safeRecords.filter(r => r.status === 'hadir').length;
+  const totalIzin = safeRecords.filter(r => r.status === 'izin').length;
+  const totalSakit = safeRecords.filter(r => r.status === 'sakit').length;
+  const totalAlpa = safeRecords.filter(r => r.status === 'alpa').length;
+  const overallRate = Math.round((totalHadir / (safeRecords.length || 1)) * 100);
 
   // Group transactions by category for financial statement
   const incomeByCategory: { [key: string]: number } = {};
   const expenseByCategory: { [key: string]: number } = {};
 
-  transactions.forEach(t => {
+  safeTransactions.forEach(t => {
     if (t.type === 'masuk') {
       incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
     } else {

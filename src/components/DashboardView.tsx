@@ -57,16 +57,21 @@ const PIE_COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#8b5
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   config,
-  members,
-  events,
-  attendanceRecords,
-  transactions,
-  duesRecords,
+  members = [],
+  events = [],
+  attendanceRecords = [],
+  transactions = [],
+  duesRecords = [],
   setActiveTab,
   onOpenSelfCheckIn,
   onOpenQuickTransaction,
   onViewReceipt,
 }) => {
+  const safeMembers = Array.isArray(members) ? members : [];
+  const safeEvents = Array.isArray(events) ? events : [];
+  const safeAttendanceRecords = Array.isArray(attendanceRecords) ? attendanceRecords : [];
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const safeDuesRecords = Array.isArray(duesRecords) ? duesRecords : [];
   // Financial calculations
   const totalMasuk = transactions
     .filter(t => t.type === 'masuk')

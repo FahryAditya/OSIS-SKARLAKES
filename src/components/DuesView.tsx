@@ -43,12 +43,14 @@ interface DuesViewProps {
 }
 
 export const DuesView: React.FC<DuesViewProps> = ({
-  members,
-  duesRecords,
+  members = [],
+  duesRecords = [],
   config,
   onPayDues,
   onViewReceipt,
 }) => {
+  const safeMembers = Array.isArray(members) ? members : [];
+  const safeDuesRecords = Array.isArray(duesRecords) ? duesRecords : [];
   const [searchMember, setSearchMember] = useState('');
   const [divisionFilter, setDivisionFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
@@ -91,11 +93,11 @@ export const DuesView: React.FC<DuesViewProps> = ({
   const weeksInMonth = [1, 2, 3, 4];
 
   const getRecord = (memberId: string, month: number) => {
-    return duesRecords.find(d => d.memberId === memberId && d.month === month && (!d.week || d.week === 0) && d.year === 2026);
+    return safeDuesRecords.find(d => d.memberId === memberId && d.month === month && (!d.week || d.week === 0) && d.year === 2026);
   };
 
   const getWeeklyRecord = (memberId: string, month: number, week: number) => {
-    const wRec = duesRecords.find(d => d.memberId === memberId && d.month === month && d.week === week && d.year === 2026);
+    const wRec = safeDuesRecords.find(d => d.memberId === memberId && d.month === month && d.week === week && d.year === 2026);
     if (wRec && wRec.status === 'lunas') return wRec;
     const mRec = getRecord(memberId, month);
     if (mRec && mRec.status === 'lunas') return mRec;

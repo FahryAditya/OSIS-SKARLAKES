@@ -169,8 +169,8 @@ const THEME_STYLES: Record<string, {
 };
 
 export const SekbidView: React.FC<SekbidViewProps> = ({
-  sekbidList,
-  members,
+  sekbidList = [],
+  members = [],
   config,
   onAddMember,
   onUpdateMember,
@@ -181,6 +181,8 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   onSyncSheets,
   isSyncing = false,
 }) => {
+  const safeSekbidList = Array.isArray(sekbidList) ? sekbidList : [];
+  const safeMembers = Array.isArray(members) ? members : [];
   // Keep the legacy prop working while using the explicit callback name in App.
   const updateSekbidDetail = onUpdateSekbidDetail || onUpdateSekbid;
   // Navigation / Filter State

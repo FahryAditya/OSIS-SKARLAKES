@@ -41,16 +41,20 @@ interface AttendanceViewProps {
 }
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({
-  events,
-  records,
-  members,
+  events = [],
+  records = [],
+  members = [],
   config,
   onCreateEvent,
   onUpdateRecordStatus,
   onOpenSelfCheckIn,
   onPrintReport,
 }) => {
-  const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '');
+  const safeEvents = Array.isArray(events) ? events : [];
+  const safeRecords = Array.isArray(records) ? records : [];
+  const safeMembers = Array.isArray(members) ? members : [];
+
+  const [selectedEventId, setSelectedEventId] = useState<string>(safeEvents[0]?.id || '');
   const [activeSubTab, setActiveSubTab] = useState<'events' | 'live' | 'recap'>('live');
   const [searchMember, setSearchMember] = useState('');
   const [divisionFilter, setDivisionFilter] = useState<string>('all');

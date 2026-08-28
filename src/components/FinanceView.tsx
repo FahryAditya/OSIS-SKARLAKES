@@ -38,15 +38,19 @@ interface FinanceViewProps {
 }
 
 export const FinanceView: React.FC<FinanceViewProps> = ({
-  transactions,
-  budgetPlans,
-  events,
+  transactions = [],
+  budgetPlans = [],
+  events = [],
   config,
   onOpenAddTransaction,
   onViewReceipt,
   onPrintReport,
   onAddBudgetPlan,
 }) => {
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const safeBudgetPlans = Array.isArray(budgetPlans) ? budgetPlans : [];
+  const safeEvents = Array.isArray(events) ? events : [];
+
   const [activeTab, setActiveTab] = useState<'ledger' | 'rab'>('ledger');
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'masuk' | 'keluar'>('all');
@@ -61,7 +65,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [rabDate, setRabDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Sort chronological for calculating running balance
-  const sortedChronological = [...transactions].sort((a, b) => (a.date > b.date ? 1 : -1));
+  const sortedChronological = [...safeTransactions].sort((a, b) => (a.date > b.date ? 1 : -1));
   
   let running = 0;
   const withRunningBalance = sortedChronological.map(tx => {

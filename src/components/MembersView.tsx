@@ -92,10 +92,10 @@ interface ParsedImportMember {
 }
 
 export const MembersView: React.FC<MembersViewProps> = ({
-  members,
-  records,
-  duesRecords,
-  events,
+  members = [],
+  records = [],
+  duesRecords = [],
+  events = [],
   config,
   onAddMember,
   onBulkAddMembers,
@@ -103,6 +103,10 @@ export const MembersView: React.FC<MembersViewProps> = ({
   onUpdateMember,
   onDeleteMember,
 }) => {
+  const safeMembers = Array.isArray(members) ? members : [];
+  const safeRecords = Array.isArray(records) ? records : [];
+  const safeDuesRecords = Array.isArray(duesRecords) ? duesRecords : [];
+  const safeEvents = Array.isArray(events) ? events : [];
   const [searchQuery, setSearchQuery] = useState('');
   const [divisionFilter, setDivisionFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
