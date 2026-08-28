@@ -40,6 +40,13 @@ async function seed() {
       displayName: 'Sekretaris Umum OSIS',
       role: 'Sekretaris Umum',
     },
+    {
+      id: 'acc-admin-02',
+      email: 'administrator@osis.sch.id',
+      password: 'administrator112',
+      displayName: 'Fahry Aditya Setiawan',
+      role: 'Administrator (Ketua Umum OSIS)',
+    },
   ];
 
   for (const acc of adminAccounts) {

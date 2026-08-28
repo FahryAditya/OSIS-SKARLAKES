@@ -1009,6 +1009,72 @@ export default function App() {
             onUpdateMember={handleUpdateSekbidMember}
             onDeleteMember={handleDeleteSekbidMember}
             onUpdateSekbidDetail={handleUpdateSekbidDetail}
+            onResetData={handleResetSekbidData}
+            onSyncSheets={handleSyncToDb}
+            isSyncing={isPushingToDb}
+          />
+        )}
+
+        {activeTab === 'absensi' && (
+          <AttendanceView
+            events={events}
+            records={attendanceRecords}
+            members={members}
+            config={config}
+            onCreateEvent={handleCreateEvent}
+            onUpdateRecordStatus={handleUpdateRecordStatus}
+            onOpenSelfCheckIn={() => setIsSelfCheckInOpen(true)}
+            onPrintReport={() => setActiveTab('laporan')}
+          />
+        )}
+
+        {activeTab === 'keuangan' && (
+          <FinanceView
+            transactions={transactions}
+            budgetPlans={budgetPlans}
+            events={events}
+            config={config}
+            onOpenAddTransaction={(type) => {
+              setQuickTransactionType(type || 'masuk');
+              setIsQuickTransactionOpen(true);
+            }}
+            onViewReceipt={(tx) => {
+              setReceiptModalData({
+                isOpen: true,
+                customDetails: {
+                  receiptNumber: `TX-${tx.id.replace(/[^0-9]/g, '') || Math.floor(1000 + Math.random() * 9000)}`,
+                  payerName: tx.recipientOrPayer,
+                  description: `${tx.category} - ${tx.description}`,
+                  amount: tx.amount,
+                  date: tx.date,
+                  paymentMethod: tx.type === 'masuk' ? 'Kas Masuk Organisasi' : 'Kas Keluar Organisasi',
+                },
+              });
+            }}
+            onPrintReport={() => setActiveTab('laporan')}
+            onAddBudgetPlan={handleAddBudgetPlan}
+          />
+        )}
+
+        {activeTab === 'iuran' && (
+          <DuesView
+            members={members}
+            duesRecords={duesRecords}
+            config={config}
+            onPayDues={handlePayDues}
+            onViewReceipt={(dueRecord, member) => {
+              setReceiptModalData({
+                isOpen: true,
+                dueRecord,
+                member,
+              });
+            }}
+          />
+        )}
+
+        {activeTab === 'laporan' && (
+          <ReportsView
+            config={config}
             transactions={transactions}
             events={events}
             records={attendanceRecords}
@@ -1079,7 +1145,6 @@ export default function App() {
       {/* AUTHENTICATION MODAL (EMAIL & PASSWORD) */}
       {/* ========================================== */}
       <AuthModal
-        isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={(user, token) => {
           setCurrentUser(user);

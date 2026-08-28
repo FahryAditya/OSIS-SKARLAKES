@@ -74,6 +74,14 @@ const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
     displayName: 'Sekretaris Umum OSIS',
     role: 'Sekretaris Umum',
     createdAt: '2026-01-01',
+  },
+  {
+    id: 'acc-admin-02',
+    email: 'administrator@osis.sch.id',
+    password: 'administrator112',
+    displayName: 'Fahry Aditya Setiawan',
+    role: 'Administrator (Ketua Umum OSIS)',
+    createdAt: '2026-01-01',
   }
 ];
 
@@ -83,6 +91,14 @@ export function getAdminAccounts(): AdminAccount[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure default accounts exist if missing
+        const hasFahry = parsed.some(a => a.email.toLowerCase() === 'administrator@osis.sch.id');
+        if (!hasFahry) {
+          const merged = [...parsed, DEFAULT_ADMIN_ACCOUNTS[3]];
+          localStorage.setItem(STORAGE_KEYS.ADMIN_ACCOUNTS, JSON.stringify(merged));
+          saveAdminAccounts(merged);
+          return merged;
+        }
         return parsed;
       }
     }
@@ -91,11 +107,19 @@ export function getAdminAccounts(): AdminAccount[] {
   }
   // Initialize default
   localStorage.setItem(STORAGE_KEYS.ADMIN_ACCOUNTS, JSON.stringify(DEFAULT_ADMIN_ACCOUNTS));
+  saveAdminAccounts(DEFAULT_ADMIN_ACCOUNTS);
   return DEFAULT_ADMIN_ACCOUNTS;
 }
 
 export function saveAdminAccounts(accounts: AdminAccount[]): void {
   localStorage.setItem(STORAGE_KEYS.ADMIN_ACCOUNTS, JSON.stringify(accounts));
+
+  // Auto-sync accounts to NeonDB serverless backend
+  fetch('/api/db/admin-accounts/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accounts }),
+  }).catch(err => console.warn('Sync admin accounts to NeonDB failed:', err));
 }
 
 export function addAdminAccount(account: Omit<AdminAccount, 'id' | 'createdAt'>): AdminAccount {

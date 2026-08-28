@@ -173,6 +173,30 @@ async function startServer() {
     }
   });
 
+  app.post('/api/db/admin-accounts/bulk', async (req: Request, res: Response) => {
+    try {
+      const accounts = req.body?.accounts || [];
+      for (const a of accounts) {
+        await sql`INSERT INTO admin_accounts (id,email,password,display_name,role) VALUES (${a.id},${a.email},${a.password},${a.displayName},${a.role}) ON CONFLICT (email) DO UPDATE SET password=EXCLUDED.password,display_name=EXCLUDED.display_name,role=EXCLUDED.role`;
+      }
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Gagal menyimpan akun admin ke NeonDB.' });
+    }
+  });
+
+  app.get('/api/db/admin-accounts', async (req: Request, res: Response) => {
+    try {
+      const rows = await sql`SELECT id, email, password, display_name, role, created_at FROM admin_accounts ORDER BY created_at ASC`;
+      const mapped = rows.map((r: any) => ({
+        id: r.id, email: r.email, password: r.password, displayName: r.display_name, role: r.role, createdAt: r.created_at
+      }));
+      return res.json(mapped);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Gagal mengambil akun admin dari NeonDB.' });
+    }
+  });
+
   // GET /api/db/data - Fetch all data
   app.get('/api/db/data', async (req: Request, res: Response) => {
     try {
