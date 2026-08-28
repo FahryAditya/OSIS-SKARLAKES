@@ -58,6 +58,8 @@ export const DuesView: React.FC<DuesViewProps> = ({
   // Dues period from config (default: Aug=8 to Jul=7)
   const startMonth = config.duesStartMonth || 8;
   const endMonth = config.duesEndMonth || 7;
+  const weeklyDue = config.defaultWeeklyDue || 2500;
+  const monthlyDue = config.defaultMonthlyDue || (weeklyDue * 4);
 
   // Build ordered month list starting from startMonth
   const buildMonthRange = (start: number, end: number): number[] => {
@@ -795,31 +797,31 @@ export const DuesView: React.FC<DuesViewProps> = ({
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   <button
                     type="button"
-                    onClick={() => setCustomAmountInput(2500)}
+                    onClick={() => setCustomAmountInput(weeklyDue)}
                     className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
                   >
-                    + Rp 2.500 (1 Mgg)
+                    + {formatRupiah(weeklyDue)} (1 Mgg)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomAmountInput(5000)}
+                    onClick={() => setCustomAmountInput(weeklyDue * 2)}
                     className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
                   >
-                    + Rp 5.000 (2 Mgg)
+                    + {formatRupiah(weeklyDue * 2)} (2 Mgg)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomAmountInput(10000)}
+                    onClick={() => setCustomAmountInput(monthlyDue)}
                     className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
                   >
-                    + Rp 10.000 (1 Bln)
+                    + {formatRupiah(monthlyDue)} (1 Bln)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomAmountInput(20000)}
+                    onClick={() => setCustomAmountInput(monthlyDue * 2)}
                     className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
                   >
-                    + Rp 20.000 (2 Bln)
+                    + {formatRupiah(monthlyDue * 2)} (2 Bln)
                   </button>
                 </div>
               </div>
