@@ -225,16 +225,26 @@ export default function App() {
     showToast(title, message, type, options?.iconType);
   }, [showToast]);
 
-  // Init Auth listener on mount
+  // Init Auth listener & restore persistent session on mount
   useEffect(() => {
+    // Restore persistent session from localStorage if available (survives F5 refresh)
+    const storedUser = getCurrentStoredSession();
+    if (storedUser) {
+      setCurrentUser(storedUser);
+    }
+
     const unsubscribe = initAuth(
       (user, token) => {
         setCurrentUser(user);
         if (token) setGoogleAccessToken(token);
       },
       () => {
-        setCurrentUser(null);
-        setGoogleAccessToken(null);
+        // Only clear currentUser if no persistent active session exists in storage
+        const persistent = getCurrentStoredSession();
+        if (!persistent) {
+          setCurrentUser(null);
+          setGoogleAccessToken(null);
+        }
       }
     );
     return () => {

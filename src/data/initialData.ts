@@ -62,6 +62,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v3.0.0',
+    version: 'v3.0.0',
+    title: 'Sistem Sesi Login Persisten (Tahan Refresh F5 / Browser Reload)',
+    date: '2026-08-30',
+    category: 'Fitur Baru',
+    description: 'Implementasi persistent session storage sehingga pengurus/admin yang sudah login tidak akan terlempar kembali ke halaman login saat halaman web di-refresh (F5) atau tab ditutup.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menyimpan active session akun login ke localStorage dengan enkapsulasi aman.',
+      'Membaca dan memulihkan sesi aktif secara otomatis saat aplikasi dimuat ulang.',
+      'Sesi bertahan setelah F5 refresh dan hanya berakhir jika pengguna secara eksplisit mengklik tombol Keluar (Logout).'
+    ]
+  },
+  {
     id: 'upd-v2.9.0',
     version: 'v2.9.0',
     title: 'Penyempurnaan Antarmuka HP Siswa (Form Presensi Mandiri Langsung)',

@@ -32,6 +32,7 @@ let cachedAccessToken: string | null = null;
 
 const STORAGE_KEYS = {
   ADMIN_ACCOUNTS: 'org_app_admin_accounts_v1',
+  ACTIVE_SESSION: 'org_app_active_session_v2',
 };
 
 export interface AdminAccount {
@@ -91,7 +92,6 @@ export function getAdminAccounts(): AdminAccount[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure default accounts exist if missing
         const hasFahry = parsed.some(a => a.email.toLowerCase() === 'administrator@osis.sch.id');
         if (!hasFahry) {
           const merged = [...parsed, DEFAULT_ADMIN_ACCOUNTS[3]];
@@ -105,7 +105,6 @@ export function getAdminAccounts(): AdminAccount[] {
   } catch (e) {
     console.warn('Failed to parse admin accounts:', e);
   }
-  // Initialize default
   localStorage.setItem(STORAGE_KEYS.ADMIN_ACCOUNTS, JSON.stringify(DEFAULT_ADMIN_ACCOUNTS));
   saveAdminAccounts(DEFAULT_ADMIN_ACCOUNTS);
   return DEFAULT_ADMIN_ACCOUNTS;
@@ -114,7 +113,6 @@ export function getAdminAccounts(): AdminAccount[] {
 export function saveAdminAccounts(accounts: AdminAccount[]): void {
   localStorage.setItem(STORAGE_KEYS.ADMIN_ACCOUNTS, JSON.stringify(accounts));
 
-  // Auto-sync accounts to NeonDB serverless backend
   fetch('/api/db/admin-accounts/bulk', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -147,12 +145,36 @@ export function deleteAdminAccount(id: string): void {
 }
 
 export function getCurrentStoredSession(): User | null {
-  // Sessions are intentionally memory-only.
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && data.uid && data.email) {
+        return createApiUser(data);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse active session:', e);
+  }
   return null;
 }
 
 export function setStoredSession(user: User | null): void {
-  // Do not persist authentication sessions in browser storage.
+  try {
+    if (user) {
+      const sessionData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email?.split('@')[0] || 'Pengurus OSIS',
+        role: (user as any).role || 'Pengurus OSIS',
+      };
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify(sessionData));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+    }
+  } catch (e) {
+    console.warn('Failed to save session to storage:', e);
+  }
 }
 
 function createSyntheticUser(account: AdminAccount): User {
@@ -235,7 +257,9 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     });
     if (response.ok) {
       const data = await response.json();
-      return createApiUser(data.user);
+      const user = createApiUser(data.user);
+      setStoredSession(user);
+      return user;
     }
   } catch (error) {
     console.warn('NeonDB login unavailable, trying Firebase:', error);
