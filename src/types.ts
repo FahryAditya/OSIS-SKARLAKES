@@ -184,6 +184,19 @@ export interface SekbidDetail {
   themeColor: string;
 }
 
+export type UpdateCategory = 'UI/UX' | 'Fitur Baru' | 'Perbaikan Bug' | 'Database / Cloud' | 'Lainnya';
+
+export interface SystemUpdate {
+  id: string;
+  version: string;
+  title: string;
+  date: string;
+  category: UpdateCategory;
+  description: string;
+  author: string;
+  changesList: string[];
+}
+
 export type ActiveTab = 
   | 'dashboard'
   | 'sekbid'
@@ -192,4 +205,6 @@ export type ActiveTab =
   | 'iuran'
   | 'laporan'
   | 'anggota'
-  | 'pengaturan';
+  | 'pengaturan'
+  | 'updates';
+

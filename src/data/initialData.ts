@@ -60,4 +60,81 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
   return records;
 };
 
+export const initialSystemUpdates: import('../types').SystemUpdate[] = [
+  {
+    id: 'upd-v2.4.0',
+    version: 'v2.4.0',
+    title: 'Redesain Soft Pastel UI & Widget Interaktif Dashboard',
+    date: '2026-08-30',
+    category: 'UI/UX',
+    description: 'Transformasi antarmuka dashboard utama mengadopsi estetika Soft Pastel Modern UI dengan visual depth, icon melayang, dan chart interaktif.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Memperbarui 4 kartu statistik utama dengan warna latar Soft Pastel (Indigo, Mint Emerald, Rose, dan Sky Blue).',
+      'Menambahkan icon chip melayang di dalam lingkaran putih bersih pada setiap kartu metrik.',
+      'Mengubah grafik arus kas menjadi Area Spline Chart dengan isian gradien halus (linearGradient).',
+      'Menambahkan Donut Chart alokasi pengeluaran dengan label total nominal tepat di pusat lingkaran.',
+      'Menambahkan widget progress bar keaktifan presensi per Divisi / Sekbid.',
+      'Menambahkan Timeline Feed Aktivitas Pengurus dan Catatan Kas Terakhir dengan avatar inisial.'
+    ]
+  },
+  {
+    id: 'upd-v2.3.0',
+    version: 'v2.3.0',
+    title: 'Portal 10 Sekbid OSIS & Integrasi NeonDB Cloud',
+    date: '2026-08-25',
+    category: 'Fitur Baru',
+    description: 'Peluncuran modul manajemen 10 Sekbid OSIS lengkap dengan rincian Ketua, Anggota, Proker, serta integrasi Cloud PostgreSQL NeonDB.',
+    author: 'Administrator OSIS',
+    changesList: [
+      'Modul khusus manajemen Sekbid 1 s.d. Sekbid 10 dengan rincian tugas dan proker unggulan.',
+      'Integrasi backend API Vercel Serverless Function & NeonDB Cloud PostgreSQL.',
+      'Penyelarasan otomatis data pengurus, transaksi, dan absensi secara real-time.'
+    ]
+  },
+  {
+    id: 'upd-v2.2.0',
+    version: 'v2.2.0',
+    title: 'Sistem Sesi Presensi QR Digital & Self Check-In',
+    date: '2026-08-18',
+    category: 'Fitur Baru',
+    description: 'Kemudahan absensi kegiatan rapat dan acara OSIS menggunakan scanner QR Code otomatis.',
+    author: 'Divisi TIK & Publikasi Media',
+    changesList: [
+      'Pembuatan sesi presensi rapat/acara dengan QR Code Generator otomatis.',
+      'Fitur Presensi Mandiri (Self Check-In) bagi siswa/anggota OSIS.',
+      'Pencatatan status kehadiran (Hadir, Izin, Sakit, Alpa) beserta bukti foto/surat.'
+    ]
+  },
+  {
+    id: 'upd-v2.1.0',
+    version: 'v2.1.0',
+    title: 'Buku Kas Terpadu & Generator Kwitansi Struk Digital',
+    date: '2026-08-10',
+    category: 'Fitur Baru',
+    description: 'Pencatatan kas masuk & keluar dilengkapi pencetakan kwitansi pertanggungjawaban dana.',
+    author: 'Bendahara Umum OSIS',
+    changesList: [
+      'Modul transaksi kas cepat (Quick Transaction).',
+      'Generator Struk / Kwitansi Digital yang dapat diunduh & dicetak.',
+      'Matriks monitoring kepatuhan iuran anggota mingguan & bulanan.'
+    ]
+  },
+  {
+    id: 'upd-v2.0.0',
+    version: 'v2.0.0',
+    title: 'Peluncuran Awal Portal Terpadu OSIS-SKARLAKES',
+    date: '2026-08-01',
+    category: 'Fitur Baru',
+    description: 'Rilis perdana aplikasi web manajemen terpadu OSIS SMK Airlangga & SMK Kesehatan Airlangga.',
+    author: 'Pengurus Harian BPH',
+    changesList: [
+      'Modul Manajemen Database Anggota Pengurus.',
+      'Laporan & Rekapitulasi Otomatis (Print/PDF Ready).',
+      'Modul Pengaturan Identitas Organisasi OSIS.'
+    ]
+  }
+];
+
+
 export const initialBudgetPlans: BudgetPlan[] = [];

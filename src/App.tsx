@@ -11,10 +11,12 @@ import {
   AttendanceStatus,
   TransactionType,
   SekbidDetail,
-  SekbidMember
+  SekbidMember,
+  SystemUpdate,
 } from './types';
 import { 
   initialOrganizationConfig, 
+  initialSystemUpdates
 } from './data/initialData';
 import { initialSekbidList } from './data/sekbidData';
 import { Navbar } from './components/Navbar';
@@ -26,6 +28,7 @@ import { DuesView } from './components/DuesView';
 import { ReportsView } from './components/ReportsView';
 import { MembersView } from './components/MembersView';
 import { SettingsView } from './components/SettingsView';
+import { UpdatesView } from './components/UpdatesView';
 import { SelfCheckInModal } from './components/SelfCheckInModal';
 import { QuickTransactionModal } from './components/QuickTransactionModal';
 import { ReceiptModal } from './components/ReceiptModal';
@@ -104,6 +107,29 @@ export default function App() {
   const [presensiUrlEventId, setPresensiUrlEventId] = useState<string | undefined>(undefined);
   const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
   const [quickTransactionType, setQuickTransactionType] = useState<TransactionType>('masuk');
+
+  // System Updates (Changelog) State
+  const [systemUpdates, setSystemUpdates] = useState<SystemUpdate[]>(initialSystemUpdates);
+
+  const handleAddSystemUpdate = (newUpdate: Omit<SystemUpdate, 'id'>) => {
+    const created: SystemUpdate = {
+      ...newUpdate,
+      id: `upd-${Date.now()}`,
+    };
+    setSystemUpdates(prev => [created, ...prev]);
+    triggerActionFeedback('Log Update Disimpan!', `Versi ${created.version} (${created.title}) telah dicatat di Riwayat Update Sistem.`, {
+      type: 'success',
+      badge: 'Changelog',
+    });
+  };
+
+  const handleDeleteSystemUpdate = (id: string) => {
+    setSystemUpdates(prev => prev.filter(u => u.id !== id));
+    triggerActionFeedback('Log Update Dihapus!', 'Catatan versi telah dihapus dari riwayat sistem.', {
+      type: 'info',
+      badge: 'Changelog',
+    });
+  };
 
   // Auto open self check-in modal if opened via QR Code scan URL (e.g. ?presensi=true&eventId=evt-01)
   useEffect(() => {
@@ -1121,6 +1147,15 @@ export default function App() {
             onClearBudget={handleClearAllBudget}
             onSyncDb={handleSyncToDb}
             lastSyncedAt={lastSyncedAt}
+          />
+        )}
+
+        {activeTab === 'updates' && (
+          <UpdatesView
+            updates={systemUpdates}
+            onAddUpdate={handleAddSystemUpdate}
+            onDeleteUpdate={handleDeleteSystemUpdate}
+            isAdmin={true}
           />
         )}
 

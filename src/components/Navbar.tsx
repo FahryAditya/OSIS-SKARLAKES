@@ -66,6 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'laporan', label: 'Laporan & Dokumen', icon: FileText },
     { id: 'anggota', label: 'Anggota', icon: Users },
     { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
+    { id: 'updates', label: 'Riwayat Update', icon: Sparkles },
   ];
 
   // Session and profile data are memory-only; synthetic admin users expose role directly.
