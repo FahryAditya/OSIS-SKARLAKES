@@ -64,6 +64,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v3.3.0',
+    version: 'v3.3.0',
+    title: 'Kalkulasi Otomatis Pengurangan Tunggakan Iuran (Minggu Bebas Kas)',
+    date: '2026-08-30',
+    category: 'Perbaikan Bug',
+    description: 'Perbaikan kalkulasi statistik pada Card Tunggakan dan Slot Unpaid Iuran Kas. Saat minggu bebas/libur kas diaktifkan, jumlah slot tunggakan dan total rupiah tagihan otomatis berkurang secara presisi.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Memperbaiki rumus kalkulasi unpaidSlotsPeriod dan totalArrearsAmount di DuesView.tsx.',
+      'Minggu yang ditandai Bebas/Libur Kas (bebas) secara otomatis mengurangi jumlah slot tunggakan per anggota.',
+      'Statistik kepatuhan periode dan total tunggakan langsung tersinkronkan 100% akurat.'
+    ]
+  },
+  {
     id: 'upd-v3.2.0',
     version: 'v3.2.0',
     title: 'Pengaturan Global Minggu Mulai Kas & Sinkronisasi 40+ Anggota',

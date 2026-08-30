@@ -308,39 +308,39 @@ export const DuesView: React.FC<DuesViewProps> = ({
     return matchesSearch && matchesDiv;
   });
 
-  // Dynamic global dues statistics calculated from config month range
+  // Dynamic global dues statistics calculated from config month range & weekly exempt rules
   const paidRecords = duesRecords.filter(r => r.status === 'lunas');
   const totalCollectedAmount = paidRecords.reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
   // Stats based on the configured dues period (startMonth - endMonth)
   const periodLabel = `${getMonthName(startMonth)} - ${getMonthName(endMonth)}`;
   const totalExpectedPeriod = members.length * months.length;
+
   let paidSlotsPeriod = 0;
+  let unpaidWeeklySlotsTotal = 0;
+
   members.forEach(m => {
     months.forEach(month => {
       const mRec = getRecord(m.id, month);
-      if (mRec?.status === 'lunas') {
+      if (mRec?.status === 'lunas' || mRec?.status === 'bebas') {
         paidSlotsPeriod++;
       } else {
-        let paidWeeksCount = 0;
+        let memberMonthFulfilledWeeks = 0;
         for (let w = 1; w <= 4; w++) {
-          const wRec = duesRecords.find(d => d.memberId === m.id && d.month === month && d.week === w && d.status === 'lunas');
-          if (wRec) paidWeeksCount++;
+          const wRec = getWeeklyRecord(m.id, month, w);
+          if (wRec?.status === 'lunas' || wRec?.status === 'bebas') {
+            memberMonthFulfilledWeeks++;
+          } else {
+            unpaidWeeklySlotsTotal++;
+          }
         }
-        if (paidWeeksCount >= 4) {
-          paidSlotsPeriod++;
-        } else if (paidWeeksCount > 0) {
-          paidSlotsPeriod += paidWeeksCount / 4;
-        }
+        paidSlotsPeriod += memberMonthFulfilledWeeks / 4;
       }
     });
   });
 
-  const unpaidSlotsPeriod = Math.max(0, totalExpectedPeriod - Math.floor(paidSlotsPeriod));
-  const unpaidRecordsPeriod = duesRecords.filter(r => months.includes(r.month) && r.status === 'belum' && (!r.week || r.week === 0));
-  const totalArrearsAmount = unpaidRecordsPeriod.length > 0 
-    ? unpaidRecordsPeriod.reduce((sum, r) => sum + Number(r.amount || 0), 0)
-    : unpaidSlotsPeriod * (config.defaultMonthlyDue || 10000);
+  const unpaidSlotsPeriod = Math.max(0, Math.ceil(unpaidWeeklySlotsTotal / 4));
+  const totalArrearsAmount = unpaidWeeklySlotsTotal * (config.defaultWeeklyDue || 2500);
 
   return (
     <div className="space-y-6">
