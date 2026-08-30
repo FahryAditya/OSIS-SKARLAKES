@@ -197,19 +197,30 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
                 >
                   <div className="prose prose-xs max-w-none text-inherit space-y-2">
                     {msg.text.split('\n').map((line, idx) => {
-                      if (line.startsWith('### ')) {
-                        return <h3 key={idx} className="text-sm font-black text-indigo-900 border-b border-indigo-100 pb-1 mt-1 mb-2">{line.replace('### ', '')}</h3>;
+                      const cleanLine = line.replace(/\*\s*"\s*/g, '"').replace(/\s*"\s*\*/g, '"');
+                      const formatInline = (str: string) => {
+                        const parts = str.split(/(\*\*.*?\*\*)/g);
+                        return parts.map((part, i) => {
+                          if (part.startsWith('**') && part.endsWith('**')) {
+                            return <strong key={i} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>;
+                          }
+                          return part;
+                        });
+                      };
+
+                      if (cleanLine.startsWith('### ')) {
+                        return <h3 key={idx} className="text-sm font-black text-indigo-900 border-b border-indigo-100 pb-1 mt-1 mb-2">{formatInline(cleanLine.replace('### ', ''))}</h3>;
                       }
-                      if (line.startsWith('#### ')) {
-                        return <h4 key={idx} className="text-xs font-bold text-indigo-800 mt-2 mb-1">{line.replace('#### ', '')}</h4>;
+                      if (cleanLine.startsWith('#### ')) {
+                        return <h4 key={idx} className="text-xs font-bold text-indigo-800 mt-2 mb-1">{formatInline(cleanLine.replace('#### ', ''))}</h4>;
                       }
-                      if (line.startsWith('* ')) {
-                        return <li key={idx} className="ml-3 list-disc text-xs">{line.replace('* ', '')}</li>;
+                      if (cleanLine.startsWith('* ')) {
+                        return <li key={idx} className="ml-3 list-disc text-xs">{formatInline(cleanLine.replace('* ', ''))}</li>;
                       }
-                      if (line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ')) {
-                        return <p key={idx} className="font-semibold text-xs text-slate-800 mt-1">{line}</p>;
+                      if (cleanLine.startsWith('1. ') || cleanLine.startsWith('2. ') || cleanLine.startsWith('3. ') || cleanLine.startsWith('4. ') || cleanLine.startsWith('5. ')) {
+                        return <p key={idx} className="font-semibold text-xs text-slate-800 mt-1">{formatInline(cleanLine)}</p>;
                       }
-                      return <p key={idx} className="text-xs">{line}</p>;
+                      return <p key={idx} className="text-xs">{formatInline(cleanLine)}</p>;
                     })}
                   </div>
 

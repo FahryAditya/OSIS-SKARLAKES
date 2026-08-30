@@ -336,19 +336,19 @@ ${waText}
   return {
     text: `### 🤖 Asisten AI OSIS SKARLAKES siap membantu!
 
-Pertanyaan: *" ${userPrompt} "*
+Pertanyaan: "${userPrompt}"
 
 Berdasarkan data **${config.shortName}**:
-* **Total Pengurus**: \`${members.length} Anggota\`
-* **Kas Bersih**: \`${formatRp(balance)}\`
-* **Tarif Kas**: \`${formatRp(config.defaultWeeklyDue || 2500)}/minggu\`
+• **Total Pengurus**: \`${members.length} Anggota\`
+• **Kas Bersih**: \`${formatRp(balance)}\`
+• **Tarif Kas**: \`${formatRp(config.defaultWeeklyDue || 2500)}/minggu\`
 
 Silakan tanyakan pertanyaan lebih spesifik seperti:
-1. *"Berapa jumlah total siswa/anggota OSIS?"*
-2. *"Berapa nominal iuran kas per siswa?"*
-3. *"Analisis kesehatan kas OSIS"*
-4. *"Rekomendasi proker sekbid baru"*
-5. *"Draf WA pengingat iuran kas"*`
+1. "Berapa jumlah total siswa/anggota OSIS?"
+2. "Berapa nominal iuran kas per siswa?"
+3. "Analisis kesehatan kas OSIS"
+4. "Rekomendasi proker sekbid baru"
+5. "Draf WA pengingat iuran kas"`
   };
 }
 
