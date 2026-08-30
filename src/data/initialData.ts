@@ -62,6 +62,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v3.1.0',
+    version: 'v3.1.0',
+    title: 'Fleksibilitas Iuran Kas Mingguan & Penandaan Bebas / Libur Kas',
+    date: '2026-08-30',
+    category: 'Fitur Baru',
+    description: 'Dukungan fleksibel untuk kasus di mana iuran baru dimulai pada minggu ke-2/3 atau terdapat minggu bebas kas. Bendahara dapat menandai minggu tertentu sebagai "Bebas/Libur Kas" tanpa dihitung sebagai tunggakan.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan mode status "Tandai Bebas / Libur Kas" pada modal pembayaran iuran mingguan & bulanan.',
+      'Menampilkan badge visual Soft Purple 🌴 Bebas Mgg X pada tabel matriks iuran.',
+      'Minggu yang ditandai bebas kas secara otomatis tidak dihitung sebagai tunggakan dan persentase kepatuhan dihitung 100% akurat.'
+    ]
+  },
+  {
     id: 'upd-v3.0.0',
     version: 'v3.0.0',
     title: 'Sistem Sesi Login Persisten (Tahan Refresh F5 / Browser Reload)',

@@ -116,7 +116,7 @@ export interface MonthlyDuesRecord {
   amount: number;
   status: DuesStatus;
   paymentDate?: string;
-  paymentMethod?: 'Tunai' | 'Transfer Bank' | 'QRIS / E-Wallet';
+  paymentMethod?: 'Tunai' | 'Transfer Bank' | 'QRIS / E-Wallet' | 'Lain-lain';
   receiptNumber?: string;
   notes?: string;
 }

@@ -37,7 +37,8 @@ interface DuesViewProps {
     customAmount?: number,
     customLabel?: string,
     weeksToPay?: number[],
-    selectedMonthForWeeks?: number
+    selectedMonthForWeeks?: number,
+    targetStatus?: 'lunas' | 'bebas'
   ) => void;
   onViewReceipt: (dueRecord: MonthlyDuesRecord, member: Member) => void;
 }
@@ -92,6 +93,8 @@ export const DuesView: React.FC<DuesViewProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'Tunai' | 'Transfer Bank' | 'QRIS / E-Wallet'>('Transfer Bank');
   const [paymentNotes, setPaymentNotes] = useState('');
 
+  const [targetStatusMode, setTargetStatusMode] = useState<'lunas' | 'bebas'>('lunas');
+
   const weeksInMonth = [1, 2, 3, 4];
 
   const getRecord = (memberId: string, month: number) => {
@@ -100,14 +103,15 @@ export const DuesView: React.FC<DuesViewProps> = ({
 
   const getWeeklyRecord = (memberId: string, month: number, week: number) => {
     const wRec = safeDuesRecords.find(d => d.memberId === memberId && d.month === month && d.week === week && d.year === 2026);
-    if (wRec && wRec.status === 'lunas') return wRec;
+    if (wRec && (wRec.status === 'lunas' || wRec.status === 'bebas')) return wRec;
     const mRec = getRecord(memberId, month);
-    if (mRec && mRec.status === 'lunas') return mRec;
+    if (mRec && (mRec.status === 'lunas' || mRec.status === 'bebas')) return mRec;
     return wRec || null;
   };
 
   const handleOpenPayment = (member: Member) => {
     setSelectedMember(member);
+    setTargetStatusMode('lunas');
     if (viewMode === 'mingguan') {
       setPayType('mingguan');
       setCustomAmountInput(config.defaultWeeklyDue || 2500);
@@ -129,13 +133,13 @@ export const DuesView: React.FC<DuesViewProps> = ({
     if (selectedMonths.includes(m)) {
       const next = selectedMonths.filter(x => x !== m);
       setSelectedMonths(next);
-      if (payType === 'bulanan') {
+      if (payType === 'bulanan' && targetStatusMode === 'lunas') {
         setCustomAmountInput(next.length * (config.defaultMonthlyDue || 10000));
       }
     } else {
       const next = [...selectedMonths, m].sort((a, b) => a - b);
       setSelectedMonths(next);
-      if (payType === 'bulanan') {
+      if (payType === 'bulanan' && targetStatusMode === 'lunas') {
         setCustomAmountInput(next.length * (config.defaultMonthlyDue || 10000));
       }
     }
@@ -145,11 +149,15 @@ export const DuesView: React.FC<DuesViewProps> = ({
     if (selectedWeeks.includes(w)) {
       const next = selectedWeeks.filter(x => x !== w);
       setSelectedWeeks(next);
-      setCustomAmountInput(next.length * (config.defaultWeeklyDue || 2500));
+      if (targetStatusMode === 'lunas') {
+        setCustomAmountInput(next.length * (config.defaultWeeklyDue || 2500));
+      }
     } else {
       const next = [...selectedWeeks, w].sort((a, b) => a - b);
       setSelectedWeeks(next);
-      setCustomAmountInput(next.length * (config.defaultWeeklyDue || 2500));
+      if (targetStatusMode === 'lunas') {
+        setCustomAmountInput(next.length * (config.defaultWeeklyDue || 2500));
+      }
     }
   };
 
@@ -157,20 +165,21 @@ export const DuesView: React.FC<DuesViewProps> = ({
     e.preventDefault();
     if (!selectedMember) return;
 
-    const amountToSave = customAmountInput > 0 
+    const isBebas = targetStatusMode === 'bebas';
+    const amountToSave = isBebas ? 0 : (customAmountInput > 0 
       ? customAmountInput 
       : payType === 'mingguan' 
         ? selectedWeeks.length * (config.defaultWeeklyDue || 2500)
-        : selectedMonths.length * (config.defaultMonthlyDue || 10000);
+        : selectedMonths.length * (config.defaultMonthlyDue || 10000));
 
     let customLabel = '';
     if (payType === 'mingguan') {
       const mName = getMonthName(selectedMonthForWeekly);
       const wStr = selectedWeeks.map(w => `Mgg ${w}`).join(', ');
-      customLabel = `Iuran Mingguan (${wStr} - ${mName})`;
+      customLabel = isBebas ? `Bebas/Libur Kas (${wStr} - ${mName})` : `Iuran Mingguan (${wStr} - ${mName})`;
     } else {
       const mNames = selectedMonths.map(m => getMonthName(m)).join(', ');
-      customLabel = `Iuran Bulanan (${mNames})`;
+      customLabel = isBebas ? `Bebas/Libur Kas (${mNames})` : `Iuran Bulanan (${mNames})`;
     }
 
     if (payType === 'mingguan') {
@@ -182,7 +191,8 @@ export const DuesView: React.FC<DuesViewProps> = ({
         amountToSave,
         customLabel,
         selectedWeeks,
-        selectedMonthForWeekly
+        selectedMonthForWeekly,
+        targetStatusMode
       );
     } else {
       onPayDues(
@@ -191,7 +201,10 @@ export const DuesView: React.FC<DuesViewProps> = ({
         paymentMethod, 
         paymentNotes.trim() || undefined,
         amountToSave,
-        customLabel
+        customLabel,
+        undefined,
+        undefined,
+        targetStatusMode
       );
     }
 
@@ -199,6 +212,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
     setSelectedMember(null);
     setSelectedMonths([startMonth]);
     setSelectedWeeks([1]);
+    setTargetStatusMode('lunas');
   };
 
   // WhatsApp Reminder
@@ -596,6 +610,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
                         weeksInMonth.map((w) => {
                           const wRec = getWeeklyRecord(member.id, selectedMonthForWeekly, w);
                           const isWeekLunas = wRec?.status === 'lunas';
+                          const isWeekBebas = wRec?.status === 'bebas';
 
                           return (
                             <td key={w} className="py-2 px-2 text-center border-r border-slate-200 bg-slate-50/30">
@@ -603,9 +618,25 @@ export const DuesView: React.FC<DuesViewProps> = ({
                                 <button
                                   onClick={() => onViewReceipt(wRec, member)}
                                   title={`Minggu ${w} Lunas (${wRec.paymentMethod || 'Kas'}). Klik lihat kwitansi.`}
-                                  className="inline-flex items-center px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-3xs rounded-md transition-colors shadow-2xs"
+                                  className="inline-flex items-center px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-3xs rounded-md transition-colors shadow-2xs cursor-pointer"
                                 >
                                   ✓ Mgg {w}
+                                </button>
+                              ) : isWeekBebas ? (
+                                <button
+                                  onClick={() => {
+                                    setSelectedMember(member);
+                                    setSelectedMonthForWeekly(selectedMonthForWeekly);
+                                    setSelectedWeeks([w]);
+                                    setPayType('mingguan');
+                                    setCustomAmountInput(0);
+                                    setTargetStatusMode('bebas');
+                                    setIsPayModalOpen(true);
+                                  }}
+                                  title={`Minggu ${w} Bebas / Libur Kas (Klik untuk ubah)`}
+                                  className="inline-flex items-center px-2 py-0.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-3xs rounded-md transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  🌴 Bebas Mgg {w}
                                 </button>
                               ) : (
                                 <button
@@ -615,9 +646,10 @@ export const DuesView: React.FC<DuesViewProps> = ({
                                     setSelectedWeeks([w]);
                                     setPayType('mingguan');
                                     setCustomAmountInput(config.defaultWeeklyDue || 2500);
+                                    setTargetStatusMode('lunas');
                                     setIsPayModalOpen(true);
                                   }}
-                                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-3xs rounded-md transition-colors"
+                                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-3xs rounded-md transition-colors cursor-pointer"
                                 >
                                   + Bayar
                                 </button>
@@ -734,6 +766,38 @@ export const DuesView: React.FC<DuesViewProps> = ({
                   >
                     <Calendar className="w-3.5 h-3.5" />
                     <span>Mode Bulanan</span>
+                  </button>
+                </div>
+
+                {/* Target Status Mode Switcher */}
+                <div className="bg-slate-100 p-1 rounded-xl flex space-x-1 border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetStatusMode('lunas');
+                      setCustomAmountInput(payType === 'mingguan' ? selectedWeeks.length * weeklyDue : selectedMonths.length * monthlyDue);
+                    }}
+                    className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                      targetStatusMode === 'lunas'
+                        ? 'bg-emerald-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-white'
+                    }`}
+                  >
+                    <span>🟢 Bayar Kas (Lunas)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetStatusMode('bebas');
+                      setCustomAmountInput(0);
+                    }}
+                    className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                      targetStatusMode === 'bebas'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-white'
+                    }`}
+                  >
+                    <span>🌴 Tandai Bebas / Libur Kas</span>
                   </button>
                 </div>
               </div>
@@ -900,14 +964,16 @@ export const DuesView: React.FC<DuesViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={customAmountInput <= 0}
+                  disabled={targetStatusMode === 'lunas' && customAmountInput <= 0}
                   className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all ${
-                    customAmountInput > 0
-                      ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
-                      : 'bg-slate-300 cursor-not-allowed'
+                    targetStatusMode === 'bebas'
+                      ? 'bg-purple-600 hover:bg-purple-700 shadow-md cursor-pointer'
+                      : customAmountInput > 0
+                        ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md cursor-pointer'
+                        : 'bg-slate-300 cursor-not-allowed'
                   }`}
                 >
-                  Konfirmasi Lunas ({formatRupiah(customAmountInput)})
+                  {targetStatusMode === 'bebas' ? '🌴 Simpan Status Bebas Kas' : `Konfirmasi Lunas (${formatRupiah(customAmountInput)})`}
                 </button>
               </div>
 
