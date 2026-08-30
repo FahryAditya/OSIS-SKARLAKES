@@ -368,7 +368,16 @@ export async function getAiAssistantResponse(
   apiKey?: string,
   messagesHistory: AiMessage[] = []
 ): Promise<AiResponseResult> {
-  if (apiKey && apiKey.trim().length > 10) {
+  let effectiveKey = (apiKey && apiKey.trim().length > 10) ? apiKey.trim() : '';
+  if (!effectiveKey) {
+    try {
+      effectiveKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || '').trim();
+    } catch (e) {
+      // ignore env access error if any
+    }
+  }
+
+  if (effectiveKey && effectiveKey.length > 10) {
     try {
       const contextSummary = buildOsisContextSummary(data);
 
@@ -417,7 +426,7 @@ PETUNJUK JAWABAN:
       const modelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
       for (const modelName of modelsToTry) {
         try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey.trim()}`, {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

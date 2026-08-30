@@ -187,7 +187,7 @@ export interface SekbidDetail {
   themeColor: string;
 }
 
-export type UpdateCategory = 'UI/UX' | 'Fitur Baru' | 'Perbaikan Bug' | 'Database / Cloud' | 'Lainnya';
+export type UpdateCategory = 'UI/UX' | 'Fitur Baru' | 'Perbaikan Bug' | 'Database / Cloud' | 'Integrasi AI' | 'Mobilitas & Notifikasi' | 'Lainnya';
 
 export interface SystemUpdate {
   id: string;
