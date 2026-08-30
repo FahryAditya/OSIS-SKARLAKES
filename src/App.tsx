@@ -962,6 +962,7 @@ export default function App() {
             onRecordAttendance={handleRecordAttendance}
             config={config}
             initialSelectedEventId={presensiUrlEventId}
+            hideQrTab={true}
           />
         )}
 

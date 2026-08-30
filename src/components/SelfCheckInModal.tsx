@@ -13,6 +13,7 @@ interface SelfCheckInModalProps {
   onRecordAttendance: (record: Omit<AttendanceRecord, 'id' | 'timestamp'>) => void;
   config: OrganizationConfig;
   initialSelectedEventId?: string;
+  hideQrTab?: boolean;
 }
 
 export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
@@ -24,6 +25,7 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
   onRecordAttendance,
   config,
   initialSelectedEventId,
+  hideQrTab = false,
 }) => {
   const activeOrUpcomingEvents = events.filter(e => e.status === 'active' || e.status === 'upcoming');
   const [selectedEventId, setSelectedEventId] = useState<string>(
@@ -248,29 +250,31 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
             </div>
           )}
 
-          {/* Mode Switcher */}
-          <div className="flex space-x-2 mt-3.5">
-            <button
-              onClick={() => setActiveTab('kiosk')}
-              className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl text-center transition-all ${
-                activeTab === 'kiosk'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              Mode Form Check-In Mandiri
-            </button>
-            <button
-              onClick={() => setActiveTab('qr')}
-              className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl text-center transition-all ${
-                activeTab === 'qr'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              Tampilkan QR Code Sesi (Scan Web)
-            </button>
-          </div>
+          {/* Mode Switcher (Sembunyikan jika diakses siswa via scan QR di HP) */}
+          {!hideQrTab && (
+            <div className="flex space-x-2 mt-3.5">
+              <button
+                onClick={() => setActiveTab('kiosk')}
+                className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl text-center transition-all ${
+                  activeTab === 'kiosk'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                Mode Form Check-In Mandiri
+              </button>
+              <button
+                onClick={() => setActiveTab('qr')}
+                className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl text-center transition-all ${
+                  activeTab === 'qr'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                Tampilkan QR Code Sesi (Scan Web)
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content Body */}

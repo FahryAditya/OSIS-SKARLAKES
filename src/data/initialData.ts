@@ -62,6 +62,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v2.9.0',
+    version: 'v2.9.0',
+    title: 'Penyempurnaan Antarmuka HP Siswa (Form Presensi Mandiri Langsung)',
+    date: '2026-08-30',
+    category: 'UI/UX',
+    description: 'Menyembunyikan tombol tab "Tampilkan QR Code Sesi" secara otomatis saat siswa mendeteksi QR Code di HP, sehingga layar HP siswa langsung menampilkan Form Presensi Mandiri secara bersih dan fokus.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan prop hideQrTab={true} pada modal presensi publik di App.tsx.',
+      'Siswa yang memindai QR Code di HP langsung disajikan Form Check-In Mandiri tanpa opsi menampilkan QR Code kembali.',
+      'Membuat antarmuka HP siswa lebih bersih, intuitif, dan tidak membingungkan.'
+    ]
+  },
+  {
     id: 'upd-v2.8.0',
     version: 'v2.8.0',
     title: 'Perbaikan Bug Fatal White Screen Presensi QR (Akses Tanpa Login)',
