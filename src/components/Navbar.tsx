@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Sparkles,
+  Rocket,
   Menu,
   X
 } from 'lucide-react';
@@ -59,15 +60,16 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const navItems: { id: ActiveTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const navItems: { id: ActiveTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'sekbid', label: '10 Sekbid OSIS', icon: Layers },
-    { id: 'absensi', label: 'Absensi Kegiatan', icon: CalendarCheck },
-    { id: 'keuangan', label: 'Buku Kas', icon: Wallet },
-    { id: 'iuran', label: 'Iuran Kas', icon: Coins },
-    { id: 'laporan', label: 'Laporan & Dokumen', icon: FileText },
-    { id: 'anggota', label: 'Anggota', icon: Users },
+    { id: 'absensi', label: 'Presensi & QR Code', icon: CalendarCheck },
+    { id: 'keuangan', label: 'Buku Kas Umum', icon: Wallet },
+    { id: 'iuran', label: 'Iuran Kas Anggota', icon: Coins },
+    { id: 'laporan', label: 'Laporan Resmi', icon: FileText },
+    { id: 'anggota', label: 'Direktori Anggota', icon: Users },
     { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
+    { id: 'upcoming', label: 'List Update (Akan Tiba)', icon: Rocket },
     { id: 'updates', label: 'Riwayat Update', icon: Sparkles },
   ];
 

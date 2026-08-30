@@ -5,7 +5,8 @@ import {
   AttendanceRecord, 
   Transaction, 
   MonthlyDuesRecord, 
-  BudgetPlan 
+  BudgetPlan,
+  UpcomingUpdate
 } from '../types';
 
 export const initialOrganizationConfig: OrganizationConfig = {
@@ -64,6 +65,34 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 };
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
+  {
+    id: 'upd-v4.6.0',
+    version: 'v4.6.0',
+    title: 'Desain Mewah Elegan & Dual-Mode Visualisasi Roadmap System',
+    date: '2026-08-30',
+    category: 'UI/UX',
+    description: 'Penyempurnaan estetika visual pada halaman List Update dengan efek Glassmorphism dark luxury header, background gradient orbs, dan tombol perubah tampilan Dual-Mode (Grid Cards & Executive Timeline Release).',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan efek Glassmorphism & Mesh Blur Background Orbs pada banner utama Roadmap.',
+      'Menyediakan tombol pemicu Dual-Mode Tampilan: Mode Grid Kartu & Mode Timeline Pipeline Release.',
+      'Mempercantik kartu indikator status (Segera Hadir, Dalam Pengembangan, Direncanakan) dan tombol dukungan upvote.'
+    ]
+  },
+  {
+    id: 'upd-v4.5.0',
+    version: 'v4.5.0',
+    title: 'Peluncuran Modul List Update & Roadmap Fitur Masa Depan',
+    date: '2026-08-30',
+    category: 'Fitur Baru',
+    description: 'Menambahkan menu "List Update" pada Left Sidebar navigasi utama untuk menampilkan seluruh daftar fitur yang akan tiba, target rilis versi mendatang (v4.5.0 s.d. v6.0.0), dan tombol dukungan upvote.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan menu navigasi "List Update (Akan Tiba)" pada Left Sidebar dengan ikon Rocket.',
+      'Membuat komponen halaman UpcomingUpdatesView.tsx untuk menampilkan kartu rencana release.',
+      'Menambahkan fitur dukungan upvote interaktif untuk pengurus memberi umpan balik fitur favorit.'
+    ]
+  },
   {
     id: 'upd-v4.2.0',
     version: 'v4.2.0',
@@ -331,3 +360,66 @@ export const initialSystemUpdates: import('../types').SystemUpdate[] = [
 
 
 export const initialBudgetPlans: BudgetPlan[] = [];
+
+export const initialUpcomingUpdates: UpcomingUpdate[] = [
+  {
+    id: 'upc-v4.5.0',
+    versionTarget: 'v4.5.0',
+    title: 'Notifikasi Otomatis WhatsApp & Bot Telegram Pengurus',
+    targetDate: 'Oktober 2026',
+    category: 'Mobilitas & Notifikasi',
+    status: 'Segera Hadir',
+    description: 'Pengiriman nota resmi kwitansi pembayaran iuran kas dan pengingat presensi rapat langsung ke WhatsApp dan Telegram pengurus secara otomatis.',
+    featuresPlanned: [
+      'Integrasi WhatsApp Gateway API & Bot Telegram OSIS.',
+      'Kirim kwitansi iuran kas otomatis via WA begitu Bendahara mengonfirmasi Lunas.',
+      'Pengingat presensi H-1 dan H-1 jam sebelum rapat dimulai.'
+    ],
+    upvotesCount: 42
+  },
+  {
+    id: 'upc-v5.0.0',
+    versionTarget: 'v5.0.0',
+    title: 'Analytics Dashboard & Heatmap Keaktifan 10 Sekbid',
+    targetDate: 'November 2026',
+    category: 'UI/UX',
+    status: 'Dalam Pengembangan',
+    description: 'Visualisasi grafis tingkat lanjut berupa diagram pie alokasi anggaran kas, grafik tren pemasukan/pengeluaran, dan Heatmap keaktifan presensi per Sekbid.',
+    featuresPlanned: [
+      'Chart interaktif Recharts / Chart.js untuk alokasi dana per Sekbid.',
+      'Heatmap keaktifan pengurus bulanan (Skor Partisipasi OSIS).',
+      'Laporan performa Proker Sekbid siap unduh PDF.'
+    ],
+    upvotesCount: 38
+  },
+  {
+    id: 'upc-v5.1.0',
+    versionTarget: 'v5.1.0',
+    title: 'Dynamic QRIS Kasir & Digital Member ID Pass Card',
+    targetDate: 'November 2026',
+    category: 'Fitur Baru',
+    status: 'Direncanakan',
+    description: 'Fitur Kartu Pengurus Digital (Digital Pass ID Card) berbasis QR/NFC serta QRIS dinamis otomatis untuk pembayaran iuran kas sekolah secara instan.',
+    featuresPlanned: [
+      'Generasi QRIS dinamis otomatis sesuai jumlah tagihan iuran kas.',
+      'Kartu Tanda Pengurus OSIS Digital dengan Apple Wallet / Google Wallet pass card.',
+      'Verifikasi identitas pengurus via Scan QR Member.'
+    ],
+    upvotesCount: 29
+  },
+  {
+    id: 'upc-v6.0.0',
+    versionTarget: 'v6.0.0',
+    title: 'Voice Command AI & Auto-Minutes Rapat AI (Notula PDF Otomatis)',
+    targetDate: 'Desember 2026',
+    category: 'Integrasi AI',
+    status: 'Direncanakan',
+    description: 'Perekaman dan transkripsi suara rapat otomatis menjadi Notula Rapat Resmi PDF serta perintah suara (Voice Command) untuk asisten AI OSIS.',
+    featuresPlanned: [
+      'Transkripsi rekaman audio rapat menjadi Notula Rapat Resmi PDF.',
+      'Asisten AI berbasis Perintah Suara (Voice Command OSIS AI).',
+      'Ekspor resume poin rapat langsung ke grup WhatsApp.'
+    ],
+    upvotesCount: 51
+  }
+];

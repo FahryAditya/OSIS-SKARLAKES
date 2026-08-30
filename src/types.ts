@@ -200,6 +200,20 @@ export interface SystemUpdate {
   changesList: string[];
 }
 
+export type RoadmapStatus = 'Segera Hadir' | 'Dalam Pengembangan' | 'Direncanakan' | 'Uji Coba Beta';
+
+export interface UpcomingUpdate {
+  id: string;
+  versionTarget: string;
+  title: string;
+  targetDate: string;
+  category: UpdateCategory | 'Integrasi AI' | 'Mobilitas & Notifikasi';
+  status: RoadmapStatus;
+  description: string;
+  featuresPlanned: string[];
+  upvotesCount: number;
+}
+
 export type ActiveTab = 
   | 'dashboard'
   | 'sekbid'
@@ -209,5 +223,6 @@ export type ActiveTab =
   | 'laporan'
   | 'anggota'
   | 'pengaturan'
-  | 'updates';
+  | 'updates'
+  | 'upcoming';
 

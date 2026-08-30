@@ -16,7 +16,8 @@ import {
 } from './types';
 import { 
   initialOrganizationConfig, 
-  initialSystemUpdates
+  initialSystemUpdates,
+  initialUpcomingUpdates
 } from './data/initialData';
 import { initialSekbidList } from './data/sekbidData';
 import { Navbar } from './components/Navbar';
@@ -29,6 +30,7 @@ import { ReportsView } from './components/ReportsView';
 import { MembersView } from './components/MembersView';
 import { SettingsView } from './components/SettingsView';
 import { UpdatesView } from './components/UpdatesView';
+import { UpcomingUpdatesView } from './components/UpcomingUpdatesView';
 import { SelfCheckInModal } from './components/SelfCheckInModal';
 import { QuickTransactionModal } from './components/QuickTransactionModal';
 import { ReceiptModal } from './components/ReceiptModal';
@@ -1166,6 +1168,13 @@ export default function App() {
             onClearBudget={handleClearAllBudget}
             onSyncDb={handleSyncToDb}
             lastSyncedAt={lastSyncedAt}
+          />
+        )}
+
+        {activeTab === 'upcoming' && (
+          <UpcomingUpdatesView
+            upcomingList={initialUpcomingUpdates}
+            config={config}
           />
         )}
 
