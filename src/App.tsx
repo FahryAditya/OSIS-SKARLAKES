@@ -1257,7 +1257,8 @@ export default function App() {
         customDetails={receiptModalData.customDetails}
       />
 
-      {/* FLOATING AI INTELLIGENCE WIDGET BUTTON */}
+      {/* FLOATING AI INTELLIGENCE WIDGET BUTTON (DISABLED TEMPORARILY) */}
+      {/* 
       <button
         type="button"
         id="btn-floating-ai-widget"
@@ -1272,7 +1273,6 @@ export default function App() {
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
       </button>
 
-      {/* AI ASSISTANT MODAL DRAWER */}
       <AiAssistantModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
@@ -1286,6 +1286,7 @@ export default function App() {
           duesRecords
         }}
       />
+      */}
 
     </div>
   );
