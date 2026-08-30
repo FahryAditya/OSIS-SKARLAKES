@@ -19,6 +19,7 @@ import {
   AiMessage, 
   defaultAiPrompts, 
   getAiAssistantResponse, 
+  getEffectiveGeminiApiKey,
   SystemStateData 
 } from '../services/aiService';
 
@@ -52,9 +53,12 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const initialEffectiveKey = getEffectiveGeminiApiKey(apiKey);
+  const isInitialCloud = initialEffectiveKey.length > 10;
+
   const [activeEngineInfo, setActiveEngineInfo] = useState<{ isCloud: boolean; modelUsed: string }>({
-    isCloud: !!apiKey && apiKey.trim().length > 10,
-    modelUsed: apiKey && apiKey.trim().length > 10 ? 'Google Gemini 3.6 Flash' : 'Smart Local Engine (Offline)'
+    isCloud: isInitialCloud,
+    modelUsed: isInitialCloud ? 'Google Gemini 3.6 Flash' : 'Smart Local Engine (Offline Mode)'
   });
 
   const scrollToBottom = () => {
@@ -63,9 +67,15 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
 
   useEffect(() => {
     if (isOpen) {
+      const effKey = getEffectiveGeminiApiKey(apiKey);
+      const isCloudAvailable = effKey.length > 10;
+      setActiveEngineInfo({
+        isCloud: isCloudAvailable,
+        modelUsed: isCloudAvailable ? 'Google Gemini 3.6 Flash' : 'Smart Local Engine (Offline Mode)'
+      });
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, apiKey]);
 
   if (!isOpen) return null;
 

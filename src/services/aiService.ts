@@ -359,6 +359,21 @@ export interface AiResponseResult {
   modelUsed: string;
 }
 
+export function getEffectiveGeminiApiKey(apiKeyProp?: string): string {
+  if (apiKeyProp && apiKeyProp.trim().length > 10) {
+    return apiKeyProp.trim();
+  }
+  try {
+    const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    if (envKey && typeof envKey === 'string' && envKey.trim().length > 10) {
+      return envKey.trim();
+    }
+  } catch (e) {
+    // ignore
+  }
+  return '';
+}
+
 /**
  * Main AI Gateway function (Gemini API with Multi-Turn Chat Memory & Smart Local Fallback)
  */
@@ -368,14 +383,7 @@ export async function getAiAssistantResponse(
   apiKey?: string,
   messagesHistory: AiMessage[] = []
 ): Promise<AiResponseResult> {
-  let effectiveKey = (apiKey && apiKey.trim().length > 10) ? apiKey.trim() : '';
-  if (!effectiveKey) {
-    try {
-      effectiveKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || '').trim();
-    } catch (e) {
-      // ignore env access error if any
-    }
-  }
+  const effectiveKey = getEffectiveGeminiApiKey(apiKey);
 
   if (effectiveKey && effectiveKey.length > 10) {
     try {
