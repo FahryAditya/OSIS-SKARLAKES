@@ -512,58 +512,65 @@ export const MembersView: React.FC<MembersViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-        <div>
-          <div className="flex items-center space-x-2.5">
-            <h1 className="text-xl font-black text-slate-900">Direktori Pengurus & Anggota</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              {members.length} Anggota Terdaftar
-            </span>
+      {/* Top Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden border border-white/10">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+                {members.length} Anggota Pengurus Terdaftar
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight">
+              Direktori Pengurus & Anggota OSIS
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Daftar lengkap nama siswa, kelas, nomor WhatsApp, riwayat presensi, dan status iuran kas organisasi terpadu.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Daftar lengkap nama siswa, kelas, nomor WhatsApp, riwayat presensi, dan status iuran kas organisasi.
-          </p>
-        </div>
 
-        <div className="flex items-center flex-wrap gap-2.5">
-          {/* Hapus Anggota Button */}
-          <button
-            type="button"
-            id="btn-open-delete-members"
-            onClick={handleOpenDeleteModal}
-            className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl flex items-center space-x-1.5 border border-rose-200 transition-colors shadow-2xs"
-          >
-            <UserX className="w-4 h-4 text-rose-600" />
-            <span>Hapus Anggota</span>
-          </button>
+          <div className="flex items-center flex-wrap gap-2.5 shrink-0 pt-2 md:pt-0">
+            {/* Hapus Anggota Button */}
+            <button
+              type="button"
+              id="btn-open-delete-members"
+              onClick={handleOpenDeleteModal}
+              className="px-3.5 py-2.5 bg-white/10 hover:bg-white/15 text-rose-300 border border-rose-500/30 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition-all shadow-sm"
+            >
+              <UserX className="w-4 h-4 text-rose-400" />
+              <span>Hapus Anggota</span>
+            </button>
 
-          {/* Import Excel Button */}
-          <button
-            type="button"
-            id="btn-open-import-excel"
-            onClick={() => {
-              setParsedData([]);
-              setImportFileName(null);
-              setImportError(null);
-              setIsImportModalOpen(true);
-            }}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-xs transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Import Excel</span>
-          </button>
+            {/* Import Excel Button */}
+            <button
+              type="button"
+              id="btn-open-import-excel"
+              onClick={() => {
+                setParsedData([]);
+                setImportFileName(null);
+                setImportError(null);
+                setIsImportModalOpen(true);
+              }}
+              className="px-3.5 py-2.5 bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-sm transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Import Excel</span>
+            </button>
 
-          {/* Add Member Button */}
-          <button
-            type="button"
-            id="btn-open-add-member"
-            onClick={openAddModal}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-xs transition-colors"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Tambah Anggota Baru</span>
-          </button>
+            {/* Add Member Button */}
+            <button
+              type="button"
+              id="btn-open-add-member"
+              onClick={openAddModal}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center space-x-2 shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Tambah Anggota</span>
+            </button>
+          </div>
         </div>
       </div>
 

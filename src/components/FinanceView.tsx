@@ -155,79 +155,97 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-black text-slate-900">Buku Kas & Keuangan Organisasi</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Transparan & Akuntabel
-            </span>
+      {/* Top Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden border border-white/10">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <Receipt className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                Transparansi & Akuntabilitas Kas
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight">
+              Buku Kas & Keuangan Organisasi
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Pencatatan kas masuk & keluar, alokasi pos anggaran, realisasi RAB, dan cetak bukti transaksi kwitansi digital.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Pencatatan kas masuk & keluar, alokasi pos anggaran, realisasi RAB, dan cetak bukti transaksi kwitansi.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => onOpenAddTransaction('keluar')}
-            className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition-colors border border-rose-200"
-          >
-            <ArrowUpRight className="w-4 h-4 text-rose-600" />
-            <span>Catat Pengeluaran</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 md:pt-0">
+            <button
+              onClick={() => onOpenAddTransaction('keluar')}
+              className="px-3.5 py-2.5 bg-white/10 hover:bg-white/15 text-rose-300 border border-rose-500/30 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition-all"
+            >
+              <ArrowUpRight className="w-4 h-4 text-rose-400" />
+              <span>Catat Pengeluaran</span>
+            </button>
 
-          <button
-            onClick={() => onOpenAddTransaction('masuk')}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-xs transition-colors"
-          >
-            <ArrowDownRight className="w-4 h-4" />
-            <span>Catat Pemasukan</span>
-          </button>
+            <button
+              onClick={() => onOpenAddTransaction('masuk')}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center space-x-2 shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <ArrowDownRight className="w-4 h-4" />
+              <span>Catat Pemasukan</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Financial Summary Metric Cards */}
+      {/* Financial Summary Metric Cards (Soft Pastel UI with Floating White Circle Icons) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Saldo Kas Bersih</span>
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Wallet className="w-5 h-5" />
+        
+        {/* Card 1: Saldo Kas Bersih (Soft Indigo) */}
+        <div className="bg-indigo-50/70 border border-indigo-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-indigo-900/60 uppercase tracking-wider">Saldo Kas Bersih</span>
+              <p className="text-2xl font-black text-slate-900 tracking-tight font-mono mt-1">{formatRupiah(currentBalance)}</p>
+            </div>
+            <div className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-600 border border-indigo-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <Wallet className="w-5.5 h-5.5" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900 mt-2 font-mono">{formatRupiah(currentBalance)}</p>
-          <p className="text-2xs text-slate-500 mt-1">
-            Kas saat ini tersedia di rekening {config.bankName}
-          </p>
+          <span className="text-2xs text-slate-600 font-medium block mt-2">
+            Kas saat ini tersedia di rekening {config.bankName || 'Kas OSIS'}
+          </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Kas Masuk (Debit)</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <ArrowDownRight className="w-5 h-5" />
+        {/* Card 2: Total Kas Masuk (Soft Emerald) */}
+        <div className="bg-emerald-50/70 border border-emerald-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-emerald-900/60 uppercase tracking-wider">Total Kas Masuk (Debit)</span>
+              <p className="text-2xl font-black text-emerald-800 tracking-tight font-mono mt-1">+{formatRupiah(totalMasuk)}</p>
+            </div>
+            <div className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-emerald-600 border border-emerald-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <ArrowDownRight className="w-5.5 h-5.5" />
             </div>
           </div>
-          <p className="text-2xl font-black text-emerald-700 mt-2 font-mono">+{formatRupiah(totalMasuk)}</p>
-          <p className="text-2xs text-slate-500 mt-1">
+          <span className="text-2xs text-emerald-700 font-medium block mt-2">
             Dari {transactions.filter(t => t.type === 'masuk').length} catatan penerimaan kas
-          </p>
+          </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Kas Keluar (Kredit)</span>
-            <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-              <ArrowUpRight className="w-5 h-5" />
+        {/* Card 3: Total Kas Keluar (Soft Rose) */}
+        <div className="bg-rose-50/70 border border-rose-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-rose-900/60 uppercase tracking-wider">Total Kas Keluar (Kredit)</span>
+              <p className="text-2xl font-black text-rose-800 tracking-tight font-mono mt-1">-{formatRupiah(totalKeluar)}</p>
+            </div>
+            <div className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-rose-600 border border-rose-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <ArrowUpRight className="w-5.5 h-5.5" />
             </div>
           </div>
-          <p className="text-2xl font-black text-rose-700 mt-2 font-mono">-{formatRupiah(totalKeluar)}</p>
-          <p className="text-2xs text-slate-500 mt-1">
+          <span className="text-2xs text-rose-700 font-medium block mt-2">
             Untuk {transactions.filter(t => t.type === 'keluar').length} pengeluaran & operasional
-          </p>
+          </span>
         </div>
+
       </div>
 
       {/* Tabs Switcher: Buku Kas vs RAB */}

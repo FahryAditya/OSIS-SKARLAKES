@@ -480,35 +480,38 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-5 sm:p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+      {/* Page Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden border border-white/10">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
             <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
                 Struktur 10 Seksi Bidang OSIS
               </span>
-              <span className="text-xs text-slate-500 font-medium">Periode {config.period}</span>
+              <span className="text-xs text-slate-300 font-semibold">Periode {config.period}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight">
               Daftar Pengurus 10 Sekbid OSIS
             </h1>
-            <p className="text-sm text-slate-600 mt-1 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               Kelola struktur kepengurusan 10 Seksi Bidang (Sekbid) OSIS secara lengkap: Ketua, Wakil Ketua, dan Anggota aktif dengan program kerja terintegrasi.
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center justify-start md:justify-end md:ml-auto gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center justify-start md:justify-end md:ml-auto gap-2.5 shrink-0 pt-2 md:pt-0">
             {onSyncSheets && (
               <button
                 id="btn-sync-sekbid"
                 onClick={onSyncSheets}
                 disabled={isSyncing}
-                className="inline-flex items-center px-3 py-2 border border-emerald-500/40 rounded-lg text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-500 shadow-2xs transition-colors disabled:opacity-50"
+                className="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
                 title="Sinkronkan Data Sekbid ke Google Sheets"
               >
-                <UploadCloud className={`w-3.5 h-3.5 mr-1.5 text-emerald-600 ${isSyncing ? 'animate-bounce' : ''}`} />
+                <UploadCloud className={`w-4 h-4 mr-1.5 text-emerald-400 ${isSyncing ? 'animate-bounce' : ''}`} />
                 {isSyncing ? 'Menyimpan...' : 'Sinkron'}
               </button>
             )}
@@ -516,20 +519,20 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
             <button
               id="btn-export-csv-sekbid"
               onClick={handleExportCSV}
-              className="inline-flex items-center px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-2xs transition-colors"
+              className="inline-flex items-center px-3.5 py-2 bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-xl text-xs font-bold transition-all"
               title="Unduh Data CSV"
             >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+              <Download className="w-4 h-4 mr-1.5 text-slate-300" />
               Export CSV
             </button>
 
             <button
               id="btn-print-sekbid"
               onClick={() => window.print()}
-              className="inline-flex items-center px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-2xs transition-colors"
+              className="inline-flex items-center px-3.5 py-2 bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-xl text-xs font-bold transition-all"
               title="Cetak Struktur"
             >
-              <Printer className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+              <Printer className="w-4 h-4 mr-1.5 text-slate-300" />
               Cetak
             </button>
 
@@ -541,10 +544,10 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
                     onResetSekbidData();
                   }
                 }}
-                className="inline-flex items-center px-3 py-2 border border-amber-200 rounded-lg text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 shadow-2xs transition-colors"
+                className="inline-flex items-center px-3.5 py-2 bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 rounded-xl text-xs font-bold transition-all"
                 title="Reset ke Standar 10 Sekbid"
               >
-                <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                <RotateCcw className="w-4 h-4 mr-1.5 text-amber-400" />
                 Reset Standar
               </button>
             )}
@@ -552,47 +555,67 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
             <button
               id="btn-add-sekbid-member-top"
               onClick={() => handleOpenAddMember()}
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-2xs transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <UserPlus className="w-4 h-4 mr-1.5" />
-              Tambah Anggota Sekbid
+              Tambah Anggota
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-5 border-t border-slate-100">
-          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-            <span className="text-xs font-medium text-slate-500">Total Seksi Bidang</span>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xl font-bold text-slate-800">10 Sekbid</span>
-              <Layers className="w-4 h-4 text-indigo-500" />
+      {/* Quick Stats Grid (Soft Pastel UI with White Floating Circle Icons) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-indigo-50/70 border border-indigo-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-4 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-indigo-900/60 uppercase tracking-wider">Total Seksi Bidang</span>
+              <p className="text-xl font-black text-slate-900 tracking-tight mt-1">10 Sekbid</p>
+            </div>
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-600 border border-indigo-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <Layers className="w-5 h-5" />
             </div>
           </div>
+          <span className="text-2xs text-slate-500 font-medium block mt-2">Struktur OSIS Lengkap</span>
+        </div>
 
-          <div className="bg-amber-50/60 rounded-lg p-3 border border-amber-100">
-            <span className="text-xs font-medium text-amber-800">Ketua Sekbid</span>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xl font-bold text-amber-900">{totalKetua} / 10</span>
-              <Crown className="w-4 h-4 text-amber-600" />
+        <div className="bg-amber-50/70 border border-amber-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-4 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-amber-900/60 uppercase tracking-wider">Ketua Sekbid</span>
+              <p className="text-xl font-black text-amber-900 tracking-tight mt-1">{totalKetua} / 10</p>
+            </div>
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-amber-600 border border-amber-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <Crown className="w-5 h-5" />
             </div>
           </div>
+          <span className="text-2xs text-amber-700 font-medium block mt-2">Koordinator Utama</span>
+        </div>
 
-          <div className="bg-indigo-50/60 rounded-lg p-3 border border-indigo-100">
-            <span className="text-xs font-medium text-indigo-800">Wakil Ketua Sekbid</span>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xl font-bold text-indigo-900">{totalWakil} / 10</span>
-              <UserCheck className="w-4 h-4 text-indigo-600" />
+        <div className="bg-sky-50/70 border border-sky-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-4 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-sky-900/60 uppercase tracking-wider">Wakil Ketua Sekbid</span>
+              <p className="text-xl font-black text-sky-900 tracking-tight mt-1">{totalWakil} / 10</p>
+            </div>
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-sky-600 border border-sky-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <UserCheck className="w-5 h-5" />
             </div>
           </div>
+          <span className="text-2xs text-sky-700 font-medium block mt-2">Pendamping Sekbid</span>
+        </div>
 
-          <div className="bg-emerald-50/60 rounded-lg p-3 border border-emerald-100">
-            <span className="text-xs font-medium text-emerald-800">Total Anggota Sekbid</span>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xl font-bold text-emerald-900">{members.length} Orang</span>
-              <Users className="w-4 h-4 text-emerald-600" />
+        <div className="bg-emerald-50/70 border border-emerald-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-4 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-emerald-900/60 uppercase tracking-wider">Total Anggota Sekbid</span>
+              <p className="text-xl font-black text-emerald-900 tracking-tight mt-1">{members.length} Orang</p>
+            </div>
+            <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-emerald-600 border border-emerald-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <Users className="w-5 h-5" />
             </div>
           </div>
+          <span className="text-2xs text-emerald-700 font-medium block mt-2">Staf & Anggota Aktif</span>
         </div>
       </div>
 

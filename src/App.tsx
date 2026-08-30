@@ -994,8 +994,8 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      {/* Main App Content View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-24 sm:pb-12">
+      {/* Main App Content View Container (Adjusted for Left Sidebar & Fixed Top Header) */}
+      <main className="flex-1 lg:pl-64 xl:pl-72 pt-20 sm:pt-22 pb-24 sm:pb-12 px-3 sm:px-6 lg:px-8 w-full transition-all">
         <ErrorBoundary>
         
         {activeTab === 'dashboard' && (

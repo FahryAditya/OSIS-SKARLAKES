@@ -314,64 +314,97 @@ export const DuesView: React.FC<DuesViewProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Header Banner */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Manajemen Iuran Kas Anggota</h1>
-            <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold text-2xs rounded-full uppercase tracking-wider">
-              {formatRupiah(config.defaultWeeklyDue || 2500)} / Mgg &bull; {formatRupiah(config.defaultMonthlyDue)} / Bln
-            </span>
+      {/* Top Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden border border-white/10">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+                {formatRupiah(config.defaultWeeklyDue || 2500)}/mgg • {formatRupiah(config.defaultMonthlyDue)}/bln
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight">
+              Manajemen Iuran Kas Anggota
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Matriks status pembayaran kas rutin pengurus (Mode Mingguan & Bulanan), kwitansi digital resmi, dan nominal fleksibel.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Matriks status pembayaran kas rutin pengurus (Mode Mingguan & Bulanan), kwitansi digital resmi, dan nominal fleksibel.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleExportDuesCSV}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-xs transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Ekspor Matriks CSV</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 md:pt-0">
+            <button
+              onClick={handleExportDuesCSV}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center space-x-2 shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Ekspor Matriks CSV</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Dues Statistic Cards */}
+      {/* Dues Statistic Cards (Soft Pastel UI with White Floating Icons) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Iuran Terkumpul</span>
-          <p className="text-2xl font-black text-emerald-700 mt-2 font-mono">{formatRupiah(totalCollectedAmount)}</p>
-          <p className="text-2xs text-slate-500 mt-1">
-            Dari {paidRecords.length} catatan pembayaran kas terdaftar
-          </p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tunggakan Periode ({periodLabel})</span>
-          <p className="text-2xl font-black text-rose-700 mt-2 font-mono">{formatRupiah(totalArrearsAmount)}</p>
-          <p className="text-2xs text-slate-500 mt-1">
-            {unpaidSlotsPeriod} slot iuran belum terbayar
-          </p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kepatuhan Iuran Periode</span>
-          <div className="flex items-baseline space-x-2 mt-2">
-            <p className="text-2xl font-black text-slate-900 font-mono">
-              {totalExpectedPeriod > 0 ? Math.round((paidSlotsPeriod / totalExpectedPeriod) * 100) : 100}%
-            </p>
-            <span className="text-xs text-slate-500 font-semibold">({Math.floor(paidSlotsPeriod)}/{totalExpectedPeriod})</span>
+        
+        {/* Card 1: Total Iuran Terkumpul (Soft Emerald) */}
+        <div className="bg-emerald-50/70 border border-emerald-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-emerald-900/60 uppercase tracking-wider">Total Iuran Terkumpul</span>
+              <p className="text-2xl font-black text-emerald-800 tracking-tight font-mono mt-1">{formatRupiah(totalCollectedAmount)}</p>
+            </div>
+            <div className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-emerald-600 border border-emerald-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <Coins className="w-5.5 h-5.5" />
+            </div>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+          <span className="text-2xs text-emerald-700 font-medium block mt-2">
+            Dari {paidRecords.length} catatan pembayaran terverifikasi
+          </span>
+        </div>
+
+        {/* Card 2: Tunggakan (Soft Rose) */}
+        <div className="bg-rose-50/70 border border-rose-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-rose-900/60 uppercase tracking-wider">Tunggakan ({periodLabel})</span>
+              <p className="text-2xl font-black text-rose-800 tracking-tight font-mono mt-1">{formatRupiah(totalArrearsAmount)}</p>
+            </div>
+            <div className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-rose-600 border border-rose-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <AlertCircle className="w-5.5 h-5.5" />
+            </div>
+          </div>
+          <span className="text-2xs text-rose-700 font-medium block mt-2">
+            {unpaidSlotsPeriod} slot iuran perlu dikonfirmasi
+          </span>
+        </div>
+
+        {/* Card 3: Kepatuhan (Soft Indigo) */}
+        <div className="bg-indigo-50/70 border border-indigo-100/90 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-indigo-900/60 uppercase tracking-wider">Kepatuhan Periode</span>
+              <div className="flex items-baseline space-x-1.5 mt-1">
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                  {totalExpectedPeriod > 0 ? Math.round((paidSlotsPeriod / totalExpectedPeriod) * 100) : 100}%
+                </p>
+                <span className="text-2xs text-slate-500 font-semibold">({Math.floor(paidSlotsPeriod)}/{totalExpectedPeriod})</span>
+              </div>
+            </div>
+            <div className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-600 border border-indigo-100/60 shrink-0 group-hover:scale-110 transition-transform">
+              <CheckCircle className="w-5.5 h-5.5" />
+            </div>
+          </div>
+          <div className="w-full bg-indigo-200/60 rounded-full h-2 mt-3 overflow-hidden">
             <div 
-              className="bg-indigo-600 h-1.5 rounded-full" 
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-500" 
               style={{ width: `${totalExpectedPeriod > 0 ? Math.round((paidSlotsPeriod / totalExpectedPeriod) * 100) : 100}%` }} 
             />
           </div>
         </div>
+
       </div>
 
       {/* Mode Switcher Tabs */}

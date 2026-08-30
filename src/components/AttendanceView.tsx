@@ -184,38 +184,45 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       
-      {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-black text-slate-900">Manajemen Absensi & Kegiatan</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              {events.length} Kegiatan Terdaftar
-            </span>
+      {/* Top Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden border border-white/10">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+                {events.length} Sesi Kegiatan Terdaftar
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight">
+              Manajemen Absensi & Kegiatan OSIS
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Pantau kehadiran rapat, evaluasi proker, kumpul rutin, sertifikasi presensi QR mandiri, dan cetak rekapitulasi kehadiran resmi.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Pantau kehadiran rapat, evaluasi, proker, kumpul rutin serta cetak rekapitulasi kehadiran resmi.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            id="btn-open-self-checkin"
-            onClick={onOpenSelfCheckIn}
-            className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition-colors border border-indigo-200"
-          >
-            <QrCode className="w-4 h-4 text-indigo-600" />
-            <span>Presensi Mandiri / QR</span>
-          </button>
-          
-          <button
-            id="btn-create-event-modal"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-xs transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Buat Sesi Kegiatan</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 md:pt-0">
+            <button
+              id="btn-open-self-checkin"
+              onClick={onOpenSelfCheckIn}
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 font-bold text-xs rounded-xl flex items-center space-x-2 transition-all shadow-sm"
+            >
+              <QrCode className="w-4 h-4 text-indigo-300" />
+              <span>Presensi Mandiri / QR</span>
+            </button>
+            
+            <button
+              id="btn-create-event-modal"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center space-x-2 shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Buat Sesi Kegiatan</span>
+            </button>
+          </div>
         </div>
       </div>
 

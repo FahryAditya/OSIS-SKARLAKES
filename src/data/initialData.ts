@@ -62,6 +62,40 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v2.6.0',
+    version: 'v2.6.0',
+    title: 'Transformasi Layout Left Sidebar (Sidebar Kiri Modern)',
+    date: '2026-08-30',
+    category: 'UI/UX',
+    description: 'Pemindahan seluruh 9 menu navigasi utama menjadi Left Sidebar (Sidebar Kiri) bergaya SaaS Dashboard Premium dengan indikator NeonDB Cloud, drawer mobile responsif, dan verifikasi koneksi halaman 100%.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Memindahkan navigasi atas (Navbar) menjadi Left Sidebar Fixed pada layar desktop.',
+      'Menyusun 9 menu navigasi vertikal: Dashboard, 10 Sekbid, Absensi, Buku Kas, Iuran Kas, Laporan, Anggota, Pengaturan, dan Riwayat Update.',
+      'Menambahkan efek sorot menu aktif dengan latar Soft Indigo & indikator melayang.',
+      'Menambahkan Top Header Bar ringkas dengan efek glassmorphic backdrop-blur.',
+      'Menambahkan Mobile Drawer responsif untuk layar HP/Tablet dengan tombol hamburger menu.',
+      'Memverifikasi konektivitas 9 menu navigasi terhubung 100% tepat ke masing-masing komponen halaman.'
+    ]
+  },
+  {
+    id: 'upd-v2.5.0',
+    version: 'v2.5.0',
+    title: 'Penerapan Soft Pastel UI pada Seluruh Halaman Utama & Fitur Changelog',
+    date: '2026-08-30',
+    category: 'UI/UX',
+    description: 'Penerapan menyeluruh estetika Soft Pastel Modern UI pada halaman 10 Sekbid, Absensi Kegiatan, Buku Kas, Iuran Kas, dan Direktori 40 Anggota Pengurus, serta peluncuran modul Riwayat Update Sistem.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Penerapan kartu statistik Soft Pastel & Floating White Circle Icons pada halaman 10 Sekbid OSIS.',
+      'Redesain header & kartu metrik presensi pada halaman Absensi Kegiatan.',
+      'Redesain kartu Saldo Kas Bersih, Penerimaan, & Pengeluaran pada halaman Buku Kas.',
+      'Redesain kartu Total Iuran, Tunggakan, & Kepatuhan pada halaman Iuran Kas Anggota.',
+      'Redesain banner direktori & tombol aksi glassmorphic pada halaman 40 Anggota Pengurus.',
+      'Peluncuran tab baru "Riwayat Update" (Changelog & System History) di sebelah tab Pengaturan.'
+    ]
+  },
+  {
     id: 'upd-v2.4.0',
     version: 'v2.4.0',
     title: 'Redesain Soft Pastel UI & Widget Interaktif Dashboard',
