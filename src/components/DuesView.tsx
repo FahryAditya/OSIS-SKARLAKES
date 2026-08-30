@@ -724,266 +724,281 @@ export const DuesView: React.FC<DuesViewProps> = ({
 
       </div>
 
-      {/* PAYMENT MODAL WITH CUSTOM NOMINAL SUPPORT */}
+      {/* PAYMENT MODAL WITH CUSTOM NOMINAL SUPPORT (COMPACT 2-COLUMN GRID) */}
       {isPayModalOpen && selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 my-auto">
             
-            <div className="px-6 py-4 bg-indigo-600 text-white flex items-center justify-between">
+            <div className="px-5 py-3.5 bg-indigo-600 text-white flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <CreditCard className="w-5 h-5 text-indigo-200" />
-                <h2 className="text-base font-bold">Input Pembayaran Kas (Fleksibel)</h2>
+                <h2 className="text-sm sm:text-base font-bold">Input Pembayaran Kas (Fleksibel)</h2>
               </div>
               <button onClick={() => setIsPayModalOpen(false)} className="p-1 rounded hover:bg-white/20">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleProcessPayment} className="p-6 space-y-4">
+            <form onSubmit={handleProcessPayment} className="p-4 sm:p-5 space-y-3.5">
               
-              {/* Member Card */}
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                <p className="text-2xs font-bold text-slate-500 uppercase">Anggota Penyetor</p>
-                <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedMember.name}</p>
-                <p className="text-xs text-slate-500">{selectedMember.nim} &bull; {selectedMember.division}</p>
-              </div>
+              {/* 2-Column Grid Layout on Desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* COLUMN 1: Member Card + Mode Switchers + Week/Month Selector */}
+                <div className="space-y-3">
+                  
+                  {/* Member Card */}
+                  <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 flex items-center space-x-3">
+                    <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                      {selectedMember.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-3xs font-black text-indigo-900/60 uppercase tracking-wider">Anggota Penyetor</p>
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{selectedMember.name}</p>
+                      <p className="text-3xs text-slate-500 truncate">{selectedMember.nim} &bull; {selectedMember.division}</p>
+                    </div>
+                  </div>
 
-              {/* Pay Mode Selector */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Tipe Pembayaran Kas:
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPayType('mingguan');
-                      setCustomAmountInput(config.defaultWeeklyDue || 2500);
-                    }}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center space-x-1.5 ${
-                      payType === 'mingguan'
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Mode Mingguan</span>
-                  </button>
+                  {/* Mode Switchers */}
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPayType('mingguan');
+                          setCustomAmountInput(config.defaultWeeklyDue || 2500);
+                        }}
+                        className={`py-1.5 px-2.5 rounded-lg text-2xs font-bold transition-all border flex items-center justify-center space-x-1 ${
+                          payType === 'mingguan'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Mode Mingguan</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPayType('bulanan');
-                      setCustomAmountInput(config.defaultMonthlyDue || 10000);
-                    }}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center space-x-1.5 ${
-                      payType === 'bulanan'
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Mode Bulanan</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPayType('bulanan');
+                          setCustomAmountInput(config.defaultMonthlyDue || 10000);
+                        }}
+                        className={`py-1.5 px-2.5 rounded-lg text-2xs font-bold transition-all border flex items-center justify-center space-x-1 ${
+                          payType === 'bulanan'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Mode Bulanan</span>
+                      </button>
+                    </div>
+
+                    {/* Target Status Switcher */}
+                    <div className="bg-slate-100 p-1 rounded-lg flex space-x-1 border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetStatusMode('lunas');
+                          setCustomAmountInput(payType === 'mingguan' ? selectedWeeks.length * weeklyDue : selectedMonths.length * monthlyDue);
+                        }}
+                        className={`flex-1 py-1 px-2 text-3xs sm:text-2xs font-bold rounded transition-all ${
+                          targetStatusMode === 'lunas'
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'text-slate-600 hover:bg-white'
+                        }`}
+                      >
+                        🟢 Bayar Kas (Lunas)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetStatusMode('bebas');
+                          setCustomAmountInput(0);
+                        }}
+                        className={`flex-1 py-1 px-2 text-3xs sm:text-2xs font-bold rounded transition-all ${
+                          targetStatusMode === 'bebas'
+                            ? 'bg-purple-600 text-white shadow-2xs'
+                            : 'text-slate-600 hover:bg-white'
+                        }`}
+                      >
+                        🌴 Tandai Bebas / Libur
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Week or Month Selection */}
+                  {payType === 'mingguan' ? (
+                    <div className="space-y-1.5">
+                      <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider">
+                        Pilih Bulan & Minggu Pembayaran:
+                      </label>
+                      <select
+                        value={selectedMonthForWeekly}
+                        onChange={(e) => setSelectedMonthForWeekly(Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                      >
+                        {months.map(m => (
+                          <option key={m} value={m}>Bulan: {getMonthName(m)} 2026</option>
+                        ))}
+                      </select>
+
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {weeksInMonth.map((w) => {
+                          const isSelected = selectedWeeks.includes(w);
+                          return (
+                            <button
+                              type="button"
+                              key={w}
+                              onClick={() => handleToggleWeek(w)}
+                              className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all border ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              Mgg {w}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider">
+                        Pilih Bulan Pembayaran:
+                      </label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {months.map((m) => {
+                          const isAlreadyPaid = getRecord(selectedMember.id, m)?.status === 'lunas';
+                          const isSelected = selectedMonths.includes(m);
+
+                          return (
+                            <button
+                              type="button"
+                              key={m}
+                              disabled={isAlreadyPaid}
+                              onClick={() => handleToggleMonth(m)}
+                              className={`py-1 px-1 rounded-lg text-3xs font-bold transition-all ${
+                                isAlreadyPaid
+                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 cursor-not-allowed opacity-50'
+                                  : isSelected
+                                    ? 'bg-indigo-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              {getMonthName(m).slice(0, 3)}
+                              {isAlreadyPaid && <span className="block text-3xs font-normal">Lunas</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Target Status Mode Switcher */}
-                <div className="bg-slate-100 p-1 rounded-xl flex space-x-1 border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTargetStatusMode('lunas');
-                      setCustomAmountInput(payType === 'mingguan' ? selectedWeeks.length * weeklyDue : selectedMonths.length * monthlyDue);
-                    }}
-                    className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
-                      targetStatusMode === 'lunas'
-                        ? 'bg-emerald-600 text-white shadow-2xs'
-                        : 'text-slate-600 hover:bg-white'
-                    }`}
-                  >
-                    <span>🟢 Bayar Kas (Lunas)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTargetStatusMode('bebas');
-                      setCustomAmountInput(0);
-                    }}
-                    className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
-                      targetStatusMode === 'bebas'
-                        ? 'bg-purple-600 text-white shadow-2xs'
-                        : 'text-slate-600 hover:bg-white'
-                    }`}
-                  >
-                    <span>🌴 Tandai Bebas / Libur Kas</span>
-                  </button>
-                </div>
-              </div>
+                {/* COLUMN 2: Amount & Payment Details */}
+                <div className="space-y-3">
+                  
+                  {/* Nominal Box */}
+                  <div className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-200 space-y-1.5">
+                    <label className="block text-2xs font-black text-indigo-950 uppercase tracking-wider flex items-center justify-between">
+                      <span>Nominal Bayar (Rp) &bull; Fleksibel</span>
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-indigo-700">Rp</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="500"
+                        value={customAmountInput}
+                        onChange={(e) => setCustomAmountInput(Number(e.target.value))}
+                        className="w-full pl-8 pr-2.5 py-1.5 bg-white border border-indigo-300 rounded-lg text-sm font-black text-indigo-900 focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                      />
+                    </div>
+                    
+                    {/* Compact Preset Chips */}
+                    <div className="grid grid-cols-2 gap-1 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setCustomAmountInput(weeklyDue)}
+                        className="py-1 px-1.5 text-3xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded transition-colors border border-indigo-200 text-center"
+                      >
+                        + {formatRupiah(weeklyDue)} (1 Mgg)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCustomAmountInput(weeklyDue * 2)}
+                        className="py-1 px-1.5 text-3xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded transition-colors border border-indigo-200 text-center"
+                      >
+                        + {formatRupiah(weeklyDue * 2)} (2 Mgg)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCustomAmountInput(monthlyDue)}
+                        className="py-1 px-1.5 text-3xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded transition-colors border border-indigo-200 text-center"
+                      >
+                        + {formatRupiah(monthlyDue)} (1 Bln)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCustomAmountInput(monthlyDue * 2)}
+                        className="py-1 px-1.5 text-3xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded transition-colors border border-indigo-200 text-center"
+                      >
+                        + {formatRupiah(monthlyDue * 2)} (2 Bln)
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Week or Month Selection */}
-              {payType === 'mingguan' ? (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Pilih Minggu & Bulan Pembayaran:
-                  </label>
-                  <div className="flex gap-2 mb-2">
+                  {/* Payment Method */}
+                  <div>
+                    <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      Metode Pembayaran
+                    </label>
                     <select
-                      value={selectedMonthForWeekly}
-                      onChange={(e) => setSelectedMonthForWeekly(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800 font-semibold"
                     >
-                      {months.map(m => (
-                        <option key={m} value={m}>Bulan: {getMonthName(m)} 2026</option>
-                      ))}
+                      <option value="Transfer Bank">Transfer Bank ({config.bankName})</option>
+                      <option value="QRIS / E-Wallet">QRIS / GoPay / OVO / Dana</option>
+                      <option value="Tunai">Tunai / Kas Fisik Bendahara</option>
                     </select>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {weeksInMonth.map((w) => {
-                      const isSelected = selectedWeeks.includes(w);
-                      return (
-                        <button
-                          type="button"
-                          key={w}
-                          onClick={() => handleToggleWeek(w)}
-                          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border ${
-                            isSelected
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-                          }`}
-                        >
-                          Minggu {w}
-                        </button>
-                      );
-                    })}
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-2xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      Catatan / Keterangan (Opsional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Titip iuran minggu 1 & 2 via m-banking"
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-800"
+                    />
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Pilih Bulan Pembayaran:
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {months.map((m) => {
-                      const isAlreadyPaid = getRecord(selectedMember.id, m)?.status === 'lunas';
-                      const isSelected = selectedMonths.includes(m);
 
-                      return (
-                        <button
-                          type="button"
-                          key={m}
-                          disabled={isAlreadyPaid}
-                          onClick={() => handleToggleMonth(m)}
-                          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                            isAlreadyPaid
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 cursor-not-allowed opacity-50'
-                              : isSelected
-                                ? 'bg-indigo-600 text-white shadow-2xs'
-                                : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-                          }`}
-                        >
-                          {getMonthName(m).slice(0, 3)}
-                          {isAlreadyPaid && <span className="block text-3xs font-normal">Lunas</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
-              )}
 
-              {/* Editable Custom Nominal Input */}
-              <div className="bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-200 space-y-2">
-                <label className="block text-xs font-extrabold text-indigo-950 flex items-center justify-between">
-                  <span>Nominal Pembayaran (Rp) &bull; Bebas Ditentukan</span>
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-extrabold text-indigo-700">Rp</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="500"
-                    value={customAmountInput}
-                    onChange={(e) => setCustomAmountInput(Number(e.target.value))}
-                    className="w-full pl-10 pr-3 py-2 bg-white border border-indigo-300 rounded-xl text-base font-black text-indigo-900 focus:ring-2 focus:ring-indigo-500 shadow-2xs"
-                  />
-                </div>
-                
-                {/* 1-Click Preset Chips */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setCustomAmountInput(weeklyDue)}
-                    className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
-                  >
-                    + {formatRupiah(weeklyDue)} (1 Mgg)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCustomAmountInput(weeklyDue * 2)}
-                    className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
-                  >
-                    + {formatRupiah(weeklyDue * 2)} (2 Mgg)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCustomAmountInput(monthlyDue)}
-                    className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
-                  >
-                    + {formatRupiah(monthlyDue)} (1 Bln)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCustomAmountInput(monthlyDue * 2)}
-                    className="px-2.5 py-1 text-2xs font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 rounded-lg transition-colors border border-indigo-200 shadow-2xs"
-                  >
-                    + {formatRupiah(monthlyDue * 2)} (2 Bln)
-                  </button>
-                </div>
               </div>
 
-              {/* Payment Method */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Metode Pembayaran
-                </label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs bg-white text-slate-800"
-                >
-                  <option value="Transfer Bank">Transfer Bank ({config.bankName})</option>
-                  <option value="QRIS / E-Wallet">QRIS / GoPay / OVO / Dana</option>
-                  <option value="Tunai">Tunai / Kas Fisik Bendahara</option>
-                </select>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Catatan / Keterangan (Opsional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Titip iuran minggu 1 & 2 via m-banking"
-                  value={paymentNotes}
-                  onChange={(e) => setPaymentNotes(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex items-center justify-end space-x-2 pt-2">
+              {/* Submit Footer */}
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsPayModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-300"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-300"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={targetStatusMode === 'lunas' && customAmountInput <= 0}
-                  className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all ${
+                  className={`px-4 py-1.5 text-xs font-bold text-white rounded-xl shadow-xs transition-all ${
                     targetStatusMode === 'bebas'
                       ? 'bg-purple-600 hover:bg-purple-700 shadow-md cursor-pointer'
                       : customAmountInput > 0

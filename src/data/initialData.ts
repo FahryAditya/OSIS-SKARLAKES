@@ -64,6 +64,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v3.4.0',
+    version: 'v3.4.0',
+    title: 'Redesain Modal Input Pembayaran Kas (Layout 2-Kolom Ringkas & Ergonomis)',
+    date: '2026-08-30',
+    category: 'UI/UX',
+    description: 'Penyempurnaan tata letak Modal Input Pembayaran Kas di DuesView.tsx menjadi 2-Column Grid ringkas sehingga tidak kepanjangan secara vertikal dan pas di semua resolusi layar.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menstrukturkan modal pembayaran menjadi Layout 2-Kolom (Kolom Kiri: Profil & Pilihan Minggu/Bulan; Kolom Kanan: Nominal & Metode).',
+      'Mengurangi padding vertikal dan tinggi elemen tanpa mengurangi informasi penting.',
+      'Membuat antarmuka input iuran kas lebih cepat, efisien, dan estetis di laptop maupun HP.'
+    ]
+  },
+  {
     id: 'upd-v3.3.0',
     version: 'v3.3.0',
     title: 'Kalkulasi Otomatis Pengurangan Tunggakan Iuran (Minggu Bebas Kas)',
