@@ -65,6 +65,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v4.2.0',
+    version: 'v4.2.0',
+    title: 'Perbaikan Presisi Respon AI & Intent Matching Pertanyaan Spesifik',
+    date: '2026-08-30',
+    category: 'Perbaikan Bug',
+    description: 'Penyempurnaan deteksi intent pertanyaan pada Asisten AI OSIS. Pertanyaan spesifik seperti "berapa jumlah total siswa" dan "berapa uang kas per siswa" kini dijawab secara langsung dan presisi tanpa tertukar draf WA.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Memperbaiki logika intent matching pada generateSmartLocalAiResponse di aiService.ts.',
+      'Menambahkan respon presisi untuk pertanyaan jumlah total anggota dan tarif nominal kas per siswa.',
+      'Menyempurnakan integrasi model Google Gemini 3.6 Flash untuk respon AI context-aware.'
+    ]
+  },
+  {
     id: 'upd-v4.1.0',
     version: 'v4.1.0',
     title: 'Dukungan Kunci API Google Gemini Cloud & Konfigurasi Pengaturan',
