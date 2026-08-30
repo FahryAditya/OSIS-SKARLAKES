@@ -44,8 +44,10 @@ export const getMonthName = (monthNumber: number): string => {
 };
 
 export const generateQRCodeDataURL = async (text: string): Promise<string> => {
+  if (!text) return '';
   try {
-    return await QRCode.toDataURL(text, {
+    const svgString = await QRCode.toString(text, {
+      type: 'svg',
       width: 320,
       margin: 2,
       color: {
@@ -53,6 +55,7 @@ export const generateQRCodeDataURL = async (text: string): Promise<string> => {
         light: '#ffffff',
       },
     });
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   } catch (err) {
     console.error('Failed to generate QR code', err);
     return '';

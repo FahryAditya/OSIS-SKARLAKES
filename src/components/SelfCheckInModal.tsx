@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, QrCode, CheckCircle2, AlertCircle, Clock, MapPin, Search, Sparkles, Copy, Check, UserPlus, ChevronDown } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AttendanceEvent, Member, AttendanceRecord, AttendanceStatus, OrganizationConfig } from '../types';
@@ -58,6 +58,8 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
 
   const currentEvent = events.find(e => e.id === selectedEventId) || events[0];
 
+  const qrCacheRef = useRef<Record<string, string>>({});
+
   // Generate QR Code containing URL to directly open web page when scanned
   useEffect(() => {
     if (currentEvent && typeof window !== 'undefined') {
@@ -66,7 +68,14 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
       const targetUrl = `${origin}${pathname}?presensi=true&eventId=${currentEvent.id}&token=${encodeURIComponent(currentEvent.qrCodeToken)}`;
       setWebPresensiUrl(targetUrl);
 
-      generateQRCodeDataURL(targetUrl).then(url => setQrDataUrl(url));
+      if (qrCacheRef.current[currentEvent.id]) {
+        setQrDataUrl(qrCacheRef.current[currentEvent.id]);
+      } else {
+        generateQRCodeDataURL(targetUrl).then(url => {
+          qrCacheRef.current[currentEvent.id] = url;
+          setQrDataUrl(url);
+        });
+      }
     }
   }, [currentEvent]);
 
@@ -531,6 +540,50 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
                   </>
                 )}
               </div>
+
+              {/* Tampilkan Data Lengkap Siswa Terpilih */}
+              {!isManualEntry && selectedMemberId && (() => {
+                const selectedMember = members.find(m => m.id === selectedMemberId);
+                if (!selectedMember) return null;
+                return (
+                  <div className="bg-gradient-to-r from-indigo-50 via-slate-50 to-indigo-50 border border-indigo-200 rounded-2xl p-4 space-y-3 shadow-xs animate-in fade-in zoom-in-95">
+                    <div className="flex items-center justify-between border-b border-indigo-100 pb-2.5">
+                      <span className="text-2xs font-black text-indigo-900 uppercase tracking-wider flex items-center space-x-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 mr-1" />
+                        Data Lengkap Siswa / Pengurus OSIS
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-3xs font-extrabold bg-indigo-600 text-white uppercase">
+                        Terverifikasi
+                      </span>
+                    </div>
+
+                    <div className="flex items-start space-x-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
+                        {selectedMember.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <h4 className="text-sm font-black text-slate-900 leading-tight">
+                          {selectedMember.name}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                          <p className="text-slate-600">
+                            <span className="font-semibold text-slate-500">NISN / NIM:</span> <span className="font-bold text-slate-800 font-mono">{selectedMember.nim}</span>
+                          </p>
+                          <p className="text-slate-600">
+                            <span className="font-semibold text-slate-500">Kelas:</span> <span className="font-bold text-slate-800">{selectedMember.kelas || 'Siswa OSIS'}</span>
+                          </p>
+                          <p className="text-slate-600 col-span-2">
+                            <span className="font-semibold text-slate-500">Sekbid / Divisi:</span> <span className="font-bold text-indigo-700">{selectedMember.division}</span>
+                          </p>
+                          <p className="text-slate-600 col-span-2">
+                            <span className="font-semibold text-slate-500">Jabatan:</span> <span className="font-bold text-emerald-700">{selectedMember.role}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Status Radio Buttons */}
               <div>

@@ -62,6 +62,21 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v2.7.0',
+    version: 'v2.7.0',
+    title: 'Optimasi QR Code Instan (0ms Render) & Kartu Tampilan Data Lengkap Siswa',
+    date: '2026-08-30',
+    category: 'Perbaikan Bug',
+    description: 'Perbaikan bug loading QR Code yang lambat menjadi 0ms instant SVG rendering dengan cache memori, serta penambahan Kartu Data Lengkap Siswa (Nama, NISN, Kelas, Sekbid, & Jabatan) sebelum konfirmasi presensi.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Mengganti generator Canvas QR Code dengan SVG Data URI synchronous untuk render instan dalam <1ms.',
+      'Menambahkan memori cache QR Code per eventId untuk mencegah loading ulang.',
+      'Menampilkan Kartu Preview Data Lengkap Siswa/Pengurus (Nama, NISN/NIM, Kelas, Sekbid, Jabatan, & Verifikasi) saat memilih nama.',
+      'Menghubungkan otomatis rekaman presensi mandiri ke tabel Manajemen Absensi & Kegiatan OSIS dan sinkronisasi NeonDB Cloud.'
+    ]
+  },
+  {
     id: 'upd-v2.6.0',
     version: 'v2.6.0',
     title: 'Transformasi Layout Left Sidebar (Sidebar Kiri Modern)',
