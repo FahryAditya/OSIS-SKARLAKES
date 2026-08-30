@@ -1,0 +1,116 @@
+// Prisma Schema for OSIS SKARLAKES (NeonDB Cloud PostgreSQL)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model OrgConfig {
+  id        Int      @id @default(autoincrement())
+  data      Json
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@map("org_config")
+}
+
+model Member {
+  id        String   @id @default(uuid())
+  nim       String?
+  name      String
+  kelas     String?
+  division  String?  // Sekbid 1 - 10
+  role      String?
+  phone     String?
+  email     String?
+  joinDate  String?  @map("join_date")
+  isActive  Boolean? @default(true) @map("is_active")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("members")
+}
+
+model Event {
+  id             String   @id @default(uuid())
+  title          String
+  type           String?
+  date           String?
+  startTime      String?  @map("start_time")
+  endTime        String?  @map("end_time")
+  location       String?
+  locationType   String?  @map("location_type")
+  qrCodeToken    String?  @map("qr_code_token")
+  status         String?  @default("upcoming")
+  notes          String?
+  divisionTarget String?  @map("division_target")
+  organizer      String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("events")
+}
+
+model AttendanceRecord {
+  id         String   @id @default(uuid())
+  eventId    String?  @map("event_id")
+  memberId   String?  @map("member_id")
+  memberName String?  @map("member_name")
+  memberNim  String?  @map("member_nim")
+  division   String?
+  status     String?
+  timestamp  String?
+  notes      String?
+  proofUrl   String?  @map("proof_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("attendance_records")
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  type             String?
+  category         String?
+  amount           Decimal? @db.Decimal(12, 2)
+  date             String?
+  description      String?
+  recipientOrPayer String?  @map("recipient_or_payer")
+  receiptProof     String?  @map("receipt_proof")
+  recordedBy       String?  @map("recorded_by")
+  relatedEventId   String?  @map("related_event_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("transactions")
+}
+
+model DuesRecord {
+  id            String   @id @default(uuid())
+  memberId      String?  @map("member_id")
+  year          Int?
+  month         Int?
+  week          Int?
+  amount        Decimal? @db.Decimal(12, 2)
+  status        String?  @default("belum")
+  paymentDate   String?  @map("payment_date")
+  paymentMethod String?  @map("payment_method")
+  receiptNumber String?  @map("receipt_number")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("dues_records")
+}
+
+model BudgetPlan {
+  id               String   @id @default(uuid())
+  prokerName       String?  @map("proker_name")
+  division         String?
+  estimatedBudget  Decimal? @map("estimated_budget") @db.Decimal(12, 2)
+  targetMonth      String?  @map("target_month")
+  status           String?  @default("draft")
+  description      String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("budget_plans")
+}

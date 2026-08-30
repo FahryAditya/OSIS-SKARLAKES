@@ -287,56 +287,39 @@ export const MembersView: React.FC<MembersViewProps> = ({
     const templateData = [
       {
         'Nama Lengkap': 'Ahmad Fauzi',
-        'Kelas': 'XI MIPA 1',
-        'Nomor WhatsApp': '081234567891',
-        'NISN / NIM': '2311501001',
-        'Sekbid': 'Sekbid 1 (Keimanan & Ketakwaan)',
-        'Jabatan': 'Koordinator Divisi',
-        'Email': 'ahmad.fauzi@sekolah.sch.id'
+        'Kelas': 'X AKL 1',
+        'Sekbid (1-10)': '1',
+        'Email': 'ahmad.fauzi@smkairlangga.sch.id',
+        'Nomor WhatsApp': '081234567891'
       },
       {
         'Nama Lengkap': 'Siti Nurhaliza',
-        'Kelas': 'XI IPS 2',
-        'Nomor WhatsApp': '085712345678',
-        'NISN / NIM': '2311501002',
-        'Sekbid': 'Sekbid 3 (Bela Negara & Wawasan Kebangsaan)',
-        'Jabatan': 'Anggota Aktif',
-        'Email': 'siti.nur@sekolah.sch.id'
+        'Kelas': 'XI KKM 2',
+        'Sekbid (1-10)': '3',
+        'Email': 'siti.nurhaliza@smkairlangga.sch.id',
+        'Nomor WhatsApp': '085712345678'
       },
       {
         'Nama Lengkap': 'Rizky Pratama',
-        'Kelas': 'X MIPA 3',
-        'Nomor WhatsApp': '087899887766',
-        'NISN / NIM': '2311501003',
-        'Sekbid': 'Sekbid 9 (TIK & Publikasi Media)',
-        'Jabatan': 'Staf Ahli',
-        'Email': 'rizky.pratama@sekolah.sch.id'
-      },
-      {
-        'Nama Lengkap': 'Dewi Lestari',
-        'Kelas': 'XII MIPA 2',
-        'Nomor WhatsApp': '082155667788',
-        'NISN / NIM': '2311501004',
-        'Sekbid': 'Badan Pengurus Harian (BPH)',
-        'Jabatan': 'Sekretaris 1',
-        'Email': 'dewi.lestari@sekolah.sch.id'
+        'Kelas': 'XII RPL 1',
+        'Sekbid (1-10)': '9',
+        'Email': 'rizky.pratama@smkairlangga.sch.id',
+        'Nomor WhatsApp': '087899887766'
       }
     ];
 
     const ws = XLSX.utils.json_to_sheet(templateData);
     ws['!cols'] = [
-      { wch: 24 }, // Nama
+      { wch: 26 }, // Nama Lengkap
       { wch: 14 }, // Kelas
-      { wch: 18 }, // WhatsApp
-      { wch: 16 }, // NISN
-      { wch: 28 }, // Sekbid
-      { wch: 20 }, // Jabatan
-      { wch: 26 }  // Email
+      { wch: 16 }, // Sekbid (1-10)
+      { wch: 32 }, // Email
+      { wch: 18 }  // WhatsApp
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template Anggota');
-    XLSX.writeFile(wb, 'Template_Data_Anggota_OSIS.xlsx');
+    XLSX.writeFile(wb, 'Template_Impor_Anggota_OSIS_SKARLAKES.xlsx');
   };
 
   const processFile = (file: File) => {
@@ -383,7 +366,7 @@ export const MembersView: React.FC<MembersViewProps> = ({
           const rawKelas = findKey(['kelas', 'kelas siswa', 'tingkat', 'rombel', 'class', 'jurusan', 'grade']);
           const rawPhone = findKey(['nomor whatsapp', 'no. whatsapp', 'no whatsapp', 'whatsapp', 'no wa', 'wa', 'telepon', 'nomor telepon', 'no hp', 'phone', 'hp', 'handphone']);
           const rawNim = findKey(['nisn / nim', 'nisn', 'nim', 'nis', 'nomor induk', 'no. induk', 'no induk', 'id anggota']);
-          const rawDivision = findKey(['divisi', 'sekbid', 'seksi bidang', 'bidang', 'division', 'departemen']);
+          const rawDivision = findKey(['sekbid (1-10)', 'sekbid 1-10', 'sekbid', 'divisi', 'seksi bidang', 'bidang', 'division', 'departemen']);
           const rawRole = findKey(['jabatan', 'role', 'posisi', 'status jabatan']);
           const rawEmail = findKey(['email', 'surel', 'e-mail', 'alamat email']);
 
@@ -402,14 +385,21 @@ export const MembersView: React.FC<MembersViewProps> = ({
           const isValid = Boolean(rawName && rawName.length >= 2);
           const errorMessage = !rawName ? 'Nama siswa tidak boleh kosong' : undefined;
 
-          // Match closest division or default
+          // Match closest division or Sekbid 1-10 number
           let finalDivision: Division = 'Sekbid 1 (Keimanan & Ketakwaan)';
           if (rawDivision) {
-            const matched = DIVISIONS.find(d => 
-              d.toLowerCase().includes(rawDivision.toLowerCase()) || 
-              rawDivision.toLowerCase().includes(d.toLowerCase())
-            );
-            if (matched) finalDivision = matched;
+            const numMatch = rawDivision.match(/\b(10|[1-9])\b/);
+            if (numMatch) {
+              const sekNum = parseInt(numMatch[1], 10);
+              const matchedByNum = DIVISIONS.find(d => d.startsWith(`Sekbid ${sekNum}`));
+              if (matchedByNum) finalDivision = matchedByNum;
+            } else {
+              const matched = DIVISIONS.find(d => 
+                d.toLowerCase().includes(rawDivision.toLowerCase()) || 
+                rawDivision.toLowerCase().includes(d.toLowerCase())
+              );
+              if (matched) finalDivision = matched;
+            }
           }
 
           // Match closest role or default

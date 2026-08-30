@@ -45,6 +45,15 @@ export async function initializeDatabase(): Promise<void> {
     )
   `;
 
+  // Auto-migrate missing columns for existing tables in NeonDB
+  try {
+    await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS kelas TEXT;`;
+    await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS email TEXT;`;
+    await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS avatar_url TEXT;`;
+  } catch (mErr) {
+    console.warn('NeonDB Column Alter Warning:', mErr);
+  }
+
   await sql`
     CREATE TABLE IF NOT EXISTS events (
       id TEXT PRIMARY KEY,

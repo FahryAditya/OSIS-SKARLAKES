@@ -10,11 +10,14 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "seed": "tsx seed.ts"
+    "seed": "tsx seed.ts",
+    "prisma:generate": "npx prisma@5 generate",
+    "prisma:db-push": "npx prisma@5 db push"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@prisma/client": "^5.22.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/canvas-confetti": "^1.9.0",
     "@types/qrcode": "^1.5.6",
@@ -38,6 +41,7 @@
     "@vercel/node": "^7.0.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
