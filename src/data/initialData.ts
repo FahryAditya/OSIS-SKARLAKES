@@ -62,6 +62,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v2.8.0',
+    version: 'v2.8.0',
+    title: 'Perbaikan Bug Fatal White Screen Presensi QR (Akses Tanpa Login)',
+    date: '2026-08-30',
+    category: 'Perbaikan Bug',
+    description: 'Perbaikan bug fatal layar putih polos (White Screen) saat siswa/peserta mendeteksi QR Code presensi web tanpa login sebagai admin. Menyelaraskan seluruh prop (config, attendanceRecords, & handler) pada kondisi unauthenticated.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Memperbaiki crash TypeError pada komponen SelfCheckInModal saat diakses oleh pengguna publik/unauthenticated.',
+      'Menyertakan prop wajib config & attendanceRecords yang sebelumnya terlewat.',
+      'Menghubungkan handler handleRecordAttendance agar rekaman presensi siswa langsung tersimpan ke database NeonDB Cloud.'
+    ]
+  },
+  {
     id: 'upd-v2.7.0',
     version: 'v2.7.0',
     title: 'Optimasi QR Code Instan (0ms Render) & Kartu Tampilan Data Lengkap Siswa',

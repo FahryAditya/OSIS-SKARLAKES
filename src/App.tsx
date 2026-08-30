@@ -951,17 +951,17 @@ export default function App() {
             });
           }}
         />
-        {/* Modal Presensi Mandiri (dapat diakses anggota via scan QR tanpa perlu login admin) */}
+        {/* Modal Presensi Mandiri (dapat diakses anggota/siswa via scan QR tanpa perlu login admin) */}
         {isSelfCheckInOpen && (
           <SelfCheckInModal
             isOpen={isSelfCheckInOpen}
             onClose={() => setIsSelfCheckInOpen(false)}
             events={events}
             members={members}
-            initialEventId={presensiUrlEventId}
-            onCheckIn={(record) => {
-              setAttendanceRecords(prev => [record, ...prev]);
-            }}
+            attendanceRecords={attendanceRecords}
+            onRecordAttendance={handleRecordAttendance}
+            config={config}
+            initialSelectedEventId={presensiUrlEventId}
           />
         )}
 
