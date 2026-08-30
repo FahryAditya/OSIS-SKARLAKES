@@ -11,7 +11,9 @@ import {
   Copy, 
   Check, 
   RefreshCw,
-  CornerDownLeft
+  CornerDownLeft,
+  Printer,
+  Zap
 } from 'lucide-react';
 import { 
   AiMessage, 
@@ -50,6 +52,11 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [activeEngineInfo, setActiveEngineInfo] = useState<{ isCloud: boolean; modelUsed: string }>({
+    isCloud: !!apiKey && apiKey.trim().length > 10,
+    modelUsed: apiKey && apiKey.trim().length > 10 ? 'Google Gemini 3.6 Flash' : 'Smart Local Engine (Offline)'
+  });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -74,12 +81,19 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
       category
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInputPrompt('');
     setIsLoading(true);
 
     try {
-      const response = await getAiAssistantResponse(promptText, systemData, apiKey);
+      const response = await getAiAssistantResponse(promptText, systemData, apiKey, newMessages);
+      
+      setActiveEngineInfo({
+        isCloud: response.isCloud,
+        modelUsed: response.modelUsed
+      });
+
       const aiMsg: AiMessage = {
         id: `m-ai-${Date.now()}`,
         sender: 'ai',
@@ -109,6 +123,10 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleExportPdf = () => {
+    window.print();
+  };
+
   const getIconComponent = (iconName: string) => {
     switch (iconName) {
       case 'TrendingUp': return <TrendingUp className="w-4 h-4 text-emerald-600" />;
@@ -134,22 +152,41 @@ Pilih rekomendasi analisis di bawah ini atau ketik pertanyaan Anda!`,
             <div>
               <div className="flex items-center space-x-2">
                 <h2 className="text-sm sm:text-base font-black tracking-tight">OSIS AI Intelligence</h2>
-                <span className="px-2 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-1"></span>
-                  Active
-                </span>
+                {activeEngineInfo.isCloud ? (
+                  <span className="px-2 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-1"></span>
+                    Gemini 3.6 Flash
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center space-x-1">
+                    <Zap className="w-3 h-3 text-amber-400 mr-0.5" />
+                    Offline Engine
+                  </span>
+                )}
               </div>
-              <p className="text-3xs text-slate-300">Asisten Cerdas Keuangan, Presensi, & Proker Sekbid</p>
+              <p className="text-3xs text-slate-300">Mode: {activeEngineInfo.modelUsed}</p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-1">
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              title="Cetak / Ekspor PDF Percakapan AI"
+              className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors flex items-center space-x-1 text-2xs"
+            >
+              <Printer className="w-4 h-4" />
+              <span className="hidden sm:inline font-semibold">Cetak PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Chat Messages Area */}

@@ -66,6 +66,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
   {
+    id: 'upd-v5.0.0',
+    version: 'v5.0.0',
+    title: 'Peluncuran Fitur Utama OSIS AI: Multi-Turn Chat Memory & Cetak PDF',
+    date: '2026-08-30',
+    category: 'Integrasi AI',
+    description: 'Penyempurnaan tuntas 5 limitasi OSIS AI Intelligence: menambahkan ingatan obrolan bertahap (Multi-Turn Chat Memory), indikator status model AI (Cloud vs Local), dan tombol cetak PDF resume analisis AI.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan Multi-Turn Chat Memory pada getAiAssistantResponse agar AI mengingat konteks obrolan bertahap.',
+      'Menambahkan Engine Status Indicator Badge (🟢 Gemini 3.6 Flash vs ⚡ Offline Engine) pada header modal AI.',
+      'Menambahkan fitur Cetak / Ekspor PDF Resume Percakapan AI dengan 1-Click Printer handler.'
+    ]
+  },
+  {
     id: 'upd-v4.6.0',
     version: 'v4.6.0',
     title: 'Desain Mewah Elegan & Dual-Mode Visualisasi Roadmap System',
@@ -365,6 +379,21 @@ export const initialUpcomingUpdates: UpcomingUpdate[] = [
   {
     id: 'upc-v4.5.0',
     versionTarget: 'v4.5.0',
+    title: 'Telah Hadir OSIS AI Intelligence (Beta)',
+    targetDate: '1 September 2026',
+    category: 'Integrasi AI',
+    status: 'Uji Coba Beta',
+    description: 'Peluncuran perdana Asisten Pintar Organisasi OSIS AI Intelligence (Beta) yang terhubung langsung dengan Google Gemini 3.6 Flash & Data Real-Time Organisasi.',
+    featuresPlanned: [
+      'Peluncuran OSIS AI Intelligence (Beta) berbasis Google Gemini 3.6 Flash Cloud.',
+      'Analisis Kecerdasan Keuangan Kas, Evaluasi Presensi Rapat, & Generator Proker Sekbid.',
+      'Generator Draf Pesan WhatsApp Pengingat Iuran Kas 1-Click Copy.'
+    ],
+    upvotesCount: 68
+  },
+  {
+    id: 'upc-v4.6.0',
+    versionTarget: 'v4.6.0',
     title: 'Notifikasi Otomatis WhatsApp & Bot Telegram Pengurus',
     targetDate: 'Oktober 2026',
     category: 'Mobilitas & Notifikasi',

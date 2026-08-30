@@ -352,30 +352,66 @@ Silakan tanyakan pertanyaan lebih spesifik seperti:
   };
 }
 
+export interface AiResponseResult {
+  text: string;
+  actionCard?: AiMessage['actionCard'];
+  isCloud: boolean;
+  modelUsed: string;
+}
+
 /**
- * Main AI Gateway function (Gemini API with Smart Local Fallback)
+ * Main AI Gateway function (Gemini API with Multi-Turn Chat Memory & Smart Local Fallback)
  */
 export async function getAiAssistantResponse(
   userPrompt: string,
   data: SystemStateData,
-  apiKey?: string
-): Promise<{ text: string; actionCard?: AiMessage['actionCard'] }> {
+  apiKey?: string,
+  messagesHistory: AiMessage[] = []
+): Promise<AiResponseResult> {
   if (apiKey && apiKey.trim().length > 10) {
     try {
       const contextSummary = buildOsisContextSummary(data);
-      const fullPrompt = `Anda adalah "OSIS AI Intelligence", asisten AI pintar, ramah, profesional, dan analitis untuk organisasi OSIS SKARLAKES (SMK Airlangga & SMK Kesehatan Airlangga).
+
+      const systemInstructionText = `Anda adalah "OSIS AI Intelligence", asisten AI pintar, ramah, profesional, dan analitis untuk organisasi OSIS SKARLAKES (SMK Airlangga & SMK Kesehatan Airlangga).
 
 ANALISIS DATA ORGANISASI REAL-TIME SANGAT PENTING:
 Berikut adalah SELURUH DATA LIVE ORGANISASI OSIS SKARLAKES dari database cloud saat ini:
 ${contextSummary}
 
-Pertanyaan/Instruksi Pengguna:
-"${userPrompt}"
-
 PETUNJUK JAWABAN:
 1. Pikirkan dan jawablah pertanyaan pengguna secara LANGSUNG, SPESIFIK, dan CERDAS berdasarkan DATA ASLI ORGANISASI di atas.
-2. Jangan menggunakan data dummy atau template kaku jika pertanyaan pengguna spesifik (misalnya jika ditanya jumlah siswa, sebutkan jumlah siswa asli dari data; jika ditanya iuran, sebutkan tarif iuran asli; jika ditanya proker, berikan ide proker kontekstual).
-3. Berikan jawaban dalam bahasa Indonesia yang sangat sopan, komunikatif, persuasif, dan terstruktur rapi dengan Markdown.`;
+2. Ingat percakapan sebelumnya jika pengguna bertanya secara bertahap.
+3. Jangan menggunakan data dummy atau template kaku jika pertanyaan pengguna spesifik.
+4. Jaga kerahasiaan data pribadi sensitif (seperti NISN/Nomor HP) secara etis.
+5. Berikan jawaban dalam bahasa Indonesia yang sangat sopan, komunikatif, persuasif, dan terstruktur rapi dengan Markdown.`;
+
+      // Build Multi-Turn History Payload
+      const formattedContents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+
+      // System context instruction as initial seed
+      formattedContents.push({
+        role: 'user',
+        parts: [{ text: systemInstructionText }]
+      });
+      formattedContents.push({
+        role: 'model',
+        parts: [{ text: 'Siap! Saya mengerti seluruh data organisasi real-time OSIS SKARLAKES dan siap mengingat konteks percakapan.' }]
+      });
+
+      // Add recent message history (last 6 messages)
+      const validHistory = messagesHistory.filter(m => m.id !== 'welcome-msg' && m.text.trim().length > 0).slice(-6);
+      for (const msg of validHistory) {
+        formattedContents.push({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        });
+      }
+
+      // Add current prompt
+      formattedContents.push({
+        role: 'user',
+        parts: [{ text: userPrompt }]
+      });
 
       // Try gemini-3.6-flash first, then gemini-flash-latest
       const modelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
@@ -385,7 +421,7 @@ PETUNJUK JAWABAN:
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: fullPrompt }] }]
+              contents: formattedContents
             })
           });
 
@@ -393,7 +429,11 @@ PETUNJUK JAWABAN:
             const json = await response.json();
             const responseText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (responseText) {
-              return { text: responseText };
+              return { 
+                text: responseText,
+                isCloud: true,
+                modelUsed: `Google Gemini 3.6 Flash (${modelName})`
+              };
             }
           }
         } catch (mErr) {
@@ -405,5 +445,10 @@ PETUNJUK JAWABAN:
     }
   }
 
-  return generateSmartLocalAiResponse(userPrompt, data);
+  const localRes = generateSmartLocalAiResponse(userPrompt, data);
+  return {
+    ...localRes,
+    isCloud: false,
+    modelUsed: 'Smart Local Engine (Offline Mode)'
+  };
 }
