@@ -145,6 +145,8 @@ export interface OrganizationConfig {
   duesMode?: 'bulanan' | 'mingguan';
   duesStartMonth?: number; // 1-12, default 8 (Agustus)
   duesEndMonth?: number;   // 1-12, default 7 (Juli tahun berikutnya)
+  duesStartWeek?: number;  // 1-4, default 1 (e.g. 2 if kas starts in Week 2)
+  globalExemptWeeks?: number[]; // e.g. [1] for global exempt weeks
   bankName: string;
   bankAccountNumber: string;
   bankAccountHolder: string;

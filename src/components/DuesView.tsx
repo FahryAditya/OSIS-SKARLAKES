@@ -106,7 +106,24 @@ export const DuesView: React.FC<DuesViewProps> = ({
     if (wRec && (wRec.status === 'lunas' || wRec.status === 'bebas')) return wRec;
     const mRec = getRecord(memberId, month);
     if (mRec && (mRec.status === 'lunas' || mRec.status === 'bebas')) return mRec;
-    return wRec || null;
+    if (wRec) return wRec;
+
+    const globalStartWeek = config.duesStartWeek || 1;
+    const isGlobalExempt = (week < globalStartWeek) || (config.globalExemptWeeks || []).includes(week);
+    if (isGlobalExempt) {
+      return {
+        id: `global-exempt-${memberId}-${month}-w${week}`,
+        memberId,
+        year: 2026,
+        month,
+        week,
+        amount: 0,
+        status: 'bebas' as const,
+        notes: 'Bebas/Libur Kas (Pengaturan Global)',
+      };
+    }
+
+    return null;
   };
 
   const handleOpenPayment = (member: Member) => {
@@ -611,6 +628,7 @@ export const DuesView: React.FC<DuesViewProps> = ({
                           const wRec = getWeeklyRecord(member.id, selectedMonthForWeekly, w);
                           const isWeekLunas = wRec?.status === 'lunas';
                           const isWeekBebas = wRec?.status === 'bebas';
+                          const isGlobalRule = wRec?.id?.startsWith('global-exempt-');
 
                           return (
                             <td key={w} className="py-2 px-2 text-center border-r border-slate-200 bg-slate-50/30">
@@ -633,10 +651,10 @@ export const DuesView: React.FC<DuesViewProps> = ({
                                     setTargetStatusMode('bebas');
                                     setIsPayModalOpen(true);
                                   }}
-                                  title={`Minggu ${w} Bebas / Libur Kas (Klik untuk ubah)`}
+                                  title={`Minggu ${w} Bebas / Libur Kas ${isGlobalRule ? '(Diset di Pengaturan Global)' : ''}`}
                                   className="inline-flex items-center px-2 py-0.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-3xs rounded-md transition-colors shadow-2xs cursor-pointer"
                                 >
-                                  🌴 Bebas Mgg {w}
+                                  🌴 {isGlobalRule ? 'Libur (Global)' : `Bebas Mgg ${w}`}
                                 </button>
                               ) : (
                                 <button

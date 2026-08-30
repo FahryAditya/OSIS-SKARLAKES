@@ -22,6 +22,8 @@ export const initialOrganizationConfig: OrganizationConfig = {
   duesMode: 'mingguan',
   duesStartMonth: 8,  // Mulai Agustus
   duesEndMonth: 7,    // Sampai Juli (tahun ajaran berikutnya)
+  duesStartWeek: 1,   // Mulai Minggu 1 (default)
+  globalExemptWeeks: [],
   bankName: 'Bank Mandiri / QRIS Kas OSIS SKARLAKES',
   bankAccountNumber: '',
   bankAccountHolder: 'BENDAHARA OSIS SKARLAKES',
@@ -61,6 +63,20 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 };
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
+  {
+    id: 'upd-v3.2.0',
+    version: 'v3.2.0',
+    title: 'Pengaturan Global Minggu Mulai Kas & Sinkronisasi 40+ Anggota',
+    date: '2026-08-30',
+    category: 'Fitur Baru',
+    description: 'Penambahan opsi "Minggu Mulai Efektif Kas Global" dan "Minggu Libur Kas Global" di halaman Pengaturan. Seluruh 40+ anggota OSIS di direktori otomatis tersinkron tanpa perlu dikonfigurasi satu persatu.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan field duesStartWeek dan globalExemptWeeks pada OrganizationConfig.',
+      'Menambahkan kontrol Minggu Mulai Efektif Kas & Checkbox Minggu Libur Kas pada menu Pengaturan.',
+      'Secara otomatis mensinkronkan status Bebas Kas (🌴 Libur (Global)) bagi seluruh 40+ anggota dan disinkronkan ke NeonDB Cloud.'
+    ]
+  },
   {
     id: 'upd-v3.1.0',
     version: 'v3.1.0',

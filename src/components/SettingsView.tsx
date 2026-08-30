@@ -455,6 +455,50 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div>
+              <label className="block font-semibold text-slate-700 mb-1">Minggu Mulai Efektif Kas Global *</label>
+              <select
+                value={formData.duesStartWeek || 1}
+                onChange={(e) => setFormData({ ...formData, duesStartWeek: parseInt(e.target.value, 10) })}
+                className="w-full px-3 py-2 border border-indigo-300 bg-indigo-50/40 rounded-lg text-sm font-bold text-indigo-950"
+              >
+                <option value={1}>Minggu 1 (Kas Dimulai Minggu 1 - Normal)</option>
+                <option value={2}>Minggu 2 (Kas Efektif Mulai Minggu 2)</option>
+                <option value={3}>Minggu 3 (Kas Efektif Mulai Minggu 3)</option>
+                <option value={4}>Minggu 4 (Kas Efektif Mulai Minggu 4)</option>
+              </select>
+              <p className="text-2xs text-slate-500 mt-1">Jika disetel mulai Minggu 2/3, maka minggu sebelumnya otomatis disinkronkan sebagai <strong>Bebas/Libur Kas</strong> bagi seluruh 40+ anggota.</p>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Minggu Libur Kas Global (Opsional)</label>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[1, 2, 3, 4].map(w => {
+                  const currentList = formData.globalExemptWeeks || [];
+                  const isChecked = currentList.includes(w);
+                  return (
+                    <label key={w} className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center space-x-1.5 cursor-pointer transition-all ${
+                      isChecked ? 'bg-purple-100 border-purple-300 text-purple-900 shadow-2xs' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const updated = e.target.checked 
+                            ? [...currentList, w].sort((a, b) => a - b)
+                            : currentList.filter(x => x !== w);
+                          setFormData({ ...formData, globalExemptWeeks: updated });
+                        }}
+                        className="rounded text-purple-600 focus:ring-purple-500"
+                      />
+                      <span>Mgg {w} Libur</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-2xs text-slate-500 mt-1">Centang minggu yang diliburkan secara umum untuk seluruh anggota OSIS.</p>
+            </div>
+
+            <div>
               <label className="block font-semibold text-slate-700 mb-1">Nama Bank / Dompet Digital</label>
               <input
                 type="text"
