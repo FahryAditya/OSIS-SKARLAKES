@@ -31,6 +31,7 @@ export const initialOrganizationConfig: OrganizationConfig = {
   address: 'Ruang Sekretariat OSIS SKARLAKES',
   contactEmail: 'osis.skarlakes@gmail.com',
   contactPhone: '',
+  geminiApiKey: '',
 };
 
 export const initialMembers: Member[] = [];
@@ -63,6 +64,35 @@ export const generateInitialDues = (members: Member[]): MonthlyDuesRecord[] => {
 };
 
 export const initialSystemUpdates: import('../types').SystemUpdate[] = [
+  {
+    id: 'upd-v4.1.0',
+    version: 'v4.1.0',
+    title: 'Dukungan Kunci API Google Gemini Cloud & Konfigurasi Pengaturan',
+    date: '2026-08-30',
+    category: 'Database / Cloud',
+    description: 'Menambahkan kolom masukan Google Gemini API Key pada menu Pengaturan dan file lingkungan (.env), memungkinkan integrasi langsung ke model AI Cloud Google Gemini 1.5/2.5 Flash.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan field geminiApiKey pada OrganizationConfig.',
+      'Menyediakan kolom masukan kunci API Google Gemini pada menu Pengaturan.',
+      'Menyinkronkan kunci API secara aman ke NeonDB Cloud & localStorage.'
+    ]
+  },
+  {
+    id: 'upd-v4.0.0',
+    version: 'v4.0.0',
+    title: 'Peluncuran Asisten AI Pintar Organisasi (OSIS AI Intelligence)',
+    date: '2026-08-30',
+    category: 'Fitur Baru',
+    description: 'Integrasi kecerdasan buatan OSIS AI Intelligence berbasis Google Gemini 1.5/2.5 Flash & Smart Local Inference Engine untuk audit kas, evaluasi presensi, generator proker 10 sekbid, dan draf WhatsApp.',
+    author: 'Fahry Aditya Setiawan',
+    changesList: [
+      'Menambahkan service aiService.ts yang terintegrasi live context data organisasi.',
+      'Menambahkan komponen AiAssistantModal.tsx dengan 4 mode prompt cepat 1-klik.',
+      'Menyediakan Floating Glow Widget AI Button di pojok kanan bawah layar.',
+      'Mendukung salin pesan WhatsApp pengingat kas secara otomatis.'
+    ]
+  },
   {
     id: 'upd-v3.4.0',
     version: 'v3.4.0',

@@ -35,6 +35,8 @@ import { ReceiptModal } from './components/ReceiptModal';
 import { AuthModal } from './components/AuthModal';
 import { LoginView } from './components/LoginView';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AiAssistantModal } from './components/AiAssistantModal';
+import { Bot, Sparkles } from 'lucide-react';
 import { 
   FeedbackNotification, 
   FeedbackToastItem, 
@@ -151,6 +153,9 @@ export default function App() {
     }
   }, [events]);
   
+  // AI Assistant Modal State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
   // Receipt Modal State
   const [receiptModalData, setReceiptModalData] = useState<{
     isOpen: boolean;
@@ -1241,6 +1246,36 @@ export default function App() {
         member={receiptModalData.member}
         config={config}
         customDetails={receiptModalData.customDetails}
+      />
+
+      {/* FLOATING AI INTELLIGENCE WIDGET BUTTON */}
+      <button
+        type="button"
+        id="btn-floating-ai-widget"
+        onClick={() => setIsAiModalOpen(true)}
+        className="fixed bottom-5 right-5 z-40 px-3.5 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-2xl shadow-indigo-500/50 flex items-center space-x-2 transition-all hover:scale-105 active:scale-95 border border-white/20 group cursor-pointer"
+        title="Buka Asisten AI Cerdas OSIS"
+      >
+        <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
+          <Bot className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-xs font-black tracking-wide hidden sm:inline">OSIS AI</span>
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      </button>
+
+      {/* AI ASSISTANT MODAL DRAWER */}
+      <AiAssistantModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        apiKey={config.geminiApiKey || ((import.meta as any).env?.VITE_GEMINI_API_KEY || '')}
+        systemData={{
+          config,
+          members,
+          events,
+          attendanceRecords,
+          transactions,
+          duesRecords
+        }}
       />
 
     </div>

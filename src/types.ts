@@ -155,6 +155,7 @@ export interface OrganizationConfig {
   address: string;
   contactEmail: string;
   contactPhone: string;
+  geminiApiKey?: string; // Optional Google Gemini AI API Key
 }
 
 export type SekbidRole = 'Ketua Sekbid' | 'Wakil Ketua Sekbid' | 'Anggota';

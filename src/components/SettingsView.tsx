@@ -533,6 +533,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
+        {/* Section 4: Google Gemini AI API Key */}
+        <div>
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <span>Integrasi Kecerdasan Buatan (Google Gemini AI API)</span>
+          </h2>
+
+          <div className="space-y-3 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Google Gemini API Key (Opsional)
+              </label>
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                value={formData.geminiApiKey || ''}
+                onChange={(e) => setFormData({ ...formData, geminiApiKey: e.target.value })}
+                className="w-full px-3 py-2 border border-purple-300 bg-purple-50/30 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-purple-500"
+              />
+              <p className="text-2xs text-slate-500 mt-1">
+                Kunci API resmi dari Google AI Studio. Jika diisi, Asisten AI OSIS akan terhubung langsung ke model <strong>Google Gemini 1.5/2.5 Flash Cloud</strong>. Jika dikosongkan, sistem menggunakan <strong>Smart Local Inference Engine</strong> (0ms).
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
