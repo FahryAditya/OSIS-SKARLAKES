@@ -164,6 +164,11 @@ async function startServer() {
     try {
       const email = String(req.body?.email || '').trim().toLowerCase();
       const password = String(req.body?.password || '');
+
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email dan kata sandi wajib diisi.' });
+      }
+
       const accounts = await sql`SELECT id,email,display_name,role,sekbid_id FROM admin_accounts WHERE LOWER(email)=${email} AND password=${password} LIMIT 1`;
       if (!accounts.length) return res.status(401).json({ error: 'Email atau kata sandi tidak cocok.' });
       const account = accounts[0];
@@ -175,15 +180,21 @@ async function startServer() {
 
   app.post('/api/db/admin-accounts/bulk', async (req: Request, res: Response) => {
     try {
-      const accounts = req.body?.accounts || [];
+      const accounts = req.body?.accounts;
+      if (!Array.isArray(accounts)) {
+        return res.status(400).json({ error: 'Payload accounts harus berupa array.' });
+      }
+
       for (const a of accounts) {
-        await sql`INSERT INTO admin_accounts (id,email,password,display_name,role) VALUES (${a.id},${a.email},${a.password},${a.displayName},${a.role}) ON CONFLICT (email) DO UPDATE SET password=EXCLUDED.password,display_name=EXCLUDED.display_name,role=EXCLUDED.role`;
+        if (!a || !a.id || !a.email || !a.password) continue;
+        await sql`INSERT INTO admin_accounts (id,email,password,display_name,role) VALUES (${a.id},${a.email},${a.password},${a.displayName || 'Pengurus OSIS'},${a.role || 'Pengurus OSIS'}) ON CONFLICT (email) DO UPDATE SET password=EXCLUDED.password,display_name=EXCLUDED.display_name,role=EXCLUDED.role`;
       }
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ error: err.message || 'Gagal menyimpan akun admin ke NeonDB.' });
     }
   });
+
 
   app.get('/api/db/admin-accounts', async (req: Request, res: Response) => {
     try {

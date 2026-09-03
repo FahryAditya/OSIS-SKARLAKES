@@ -99,6 +99,7 @@ model DuesRecord {
   notes         String?
   createdAt     DateTime @default(now()) @map("created_at")
 
+  @@index([memberId])
   @@map("dues_records")
 }
 
@@ -107,10 +108,44 @@ model BudgetPlan {
   prokerName       String?  @map("proker_name")
   division         String?
   estimatedBudget  Decimal? @map("estimated_budget") @db.Decimal(12, 2)
+  realizedBudget   Decimal? @map("realized_budget") @db.Decimal(12, 2)
   targetMonth      String?  @map("target_month")
-  status           String?  @default("draft")
+  date             String?
+  status           String?  @default("Direncanakan")
   description      String?
   createdAt        DateTime @default(now()) @map("created_at")
 
   @@map("budget_plans")
 }
+
+model SekbidMember {
+  id           String   @id @default(uuid())
+  sekbidId     Int?     @map("sekbid_id")
+  name         String
+  nis          String?
+  role         String?
+  gradeClass   String?  @map("grade_class")
+  phone        String?
+  email        String?
+  avatarUrl    String?  @map("avatar_url")
+  status       String?  @default("Aktif")
+  taskOrFocus  String?  @map("task_or_focus")
+  joinedPeriod String?  @map("joined_period")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([sekbidId])
+  @@map("sekbid_members")
+}
+
+model AdminAccount {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  displayName String   @map("display_name")
+  role        String
+  sekbidId    Int?     @map("sekbid_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("admin_accounts")
+}
+

@@ -48,6 +48,7 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
   const [reason, setReason] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'kiosk' | 'qr'>('kiosk');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Update selected event if prop changes
   useEffect(() => {
@@ -106,78 +107,90 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
     }
   };
 
-  const handleCheckIn = (e: React.FormEvent) => {
+  const handleCheckIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentEvent) return;
+    if (!currentEvent || isSubmitting) return;
 
-    let memberId = selectedMemberId;
-    let memberName = '';
-    let memberNim = '';
-    let division: any = 'Badan Pengurus Harian (BPH)';
+    setIsSubmitting(true);
+    try {
+      let memberId = selectedMemberId;
+      let memberName = '';
+      let memberNim = '';
+      let division: any = 'Badan Pengurus Harian (BPH)';
 
-    if (isManualEntry) {
-      if (!manualName.trim()) {
-        alert('Harap masukkan Nama Lengkap Anda.');
-        return;
+      if (isManualEntry) {
+        if (!manualName.trim()) {
+          alert('Harap masukkan Nama Lengkap Anda.');
+          setIsSubmitting(false);
+          return;
+        }
+        memberName = manualName.trim();
+        memberNim = manualNim.trim() || `TAMU-${Date.now().toString().slice(-4)}`;
+        division = manualDivision as any;
+        memberId = `manual-${Date.now()}`;
+      } else {
+        if (!selectedMemberId) {
+          alert('Harap pilih Nama atau NIS/NIM Anda terlebih dahulu.');
+          setIsSubmitting(false);
+          return;
+        }
+        const member = members.find(m => m.id === selectedMemberId);
+        if (!member) {
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Check if already checked in
+        const alreadyRecorded = currentEventRecords.find(r => r.memberId === selectedMemberId);
+        if (alreadyRecorded) {
+          alert(`Anggota ${member.name} sudah tercatat presensi (${alreadyRecorded.status.toUpperCase()}) pada sesi ini.`);
+          setIsSubmitting(false);
+          return;
+        }
+
+        memberName = member.name;
+        memberNim = member.nim;
+        division = member.division;
       }
-      memberName = manualName.trim();
-      memberNim = manualNim.trim() || `TAMU-${Date.now().toString().slice(-4)}`;
-      division = manualDivision as any;
-      memberId = `manual-${Date.now()}`;
-    } else {
-      if (!selectedMemberId) {
-        alert('Harap pilih Nama atau NIS/NIM Anda terlebih dahulu.');
-        return;
-      }
-      const member = members.find(m => m.id === selectedMemberId);
-      if (!member) return;
 
-      // Check if already checked in
-      const alreadyRecorded = currentEventRecords.find(r => r.memberId === selectedMemberId);
-      if (alreadyRecorded) {
-        alert(`Anggota ${member.name} sudah tercatat presensi (${alreadyRecorded.status.toUpperCase()}) pada sesi ini.`);
-        return;
+      await onRecordAttendance({
+        eventId: currentEvent.id,
+        memberId: memberId,
+        memberName: memberName,
+        memberNim: memberNim,
+        division: division,
+        status: status,
+        notes: reason.trim() ? reason.trim() : undefined,
+      });
+
+      if (status === 'hadir') {
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b'],
+          });
+        } catch (err) {
+          console.error(err);
+        }
       }
 
-      memberName = member.name;
-      memberNim = member.nim;
-      division = member.division;
+      setSuccessMessage(`Berhasil mencatat presensi: ${memberName} (${status.toUpperCase()})`);
+      setSelectedMemberId('');
+      setManualName('');
+      setManualNim('');
+      setReason('');
+      setSearchQuery('');
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 4000);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onRecordAttendance({
-      eventId: currentEvent.id,
-      memberId: memberId,
-      memberName: memberName,
-      memberNim: memberNim,
-      division: division,
-      status: status,
-      notes: reason.trim() ? reason.trim() : undefined,
-    });
-
-    if (status === 'hadir') {
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 },
-          colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b'],
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    setSuccessMessage(`Berhasil mencatat presensi: ${memberName} (${status.toUpperCase()})`);
-    setSelectedMemberId('');
-    setManualName('');
-    setManualNim('');
-    setReason('');
-    setSearchQuery('');
-
-    setTimeout(() => {
-      setSuccessMessage(null);
-    }, 4000);
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
@@ -653,16 +666,17 @@ export const SelfCheckInModal: React.FC<SelfCheckInModalProps> = ({
 
               <button
                 type="submit"
-                disabled={!isManualEntry && !selectedMemberId}
+                disabled={isSubmitting || (!isManualEntry && !selectedMemberId)}
                 className={`w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all ${
-                  isManualEntry || selectedMemberId
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md cursor-pointer active:scale-[0.99]'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  isSubmitting || (!isManualEntry && !selectedMemberId)
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md cursor-pointer active:scale-[0.99]'
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Simpan Presensi Kehadiran</span>
+                <span>{isSubmitting ? 'Menyimpan Presensi...' : 'Simpan Presensi Kehadiran'}</span>
               </button>
+
             </form>
           )}
         </div>

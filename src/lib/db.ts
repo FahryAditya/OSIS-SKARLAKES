@@ -165,5 +165,17 @@ export async function initializeDatabase(): Promise<void> {
     )
   `;
 
+  // Performance Indexes for NeonDB PostgreSQL
+  try {
+    await sql`CREATE INDEX IF NOT EXISTS idx_attendance_event ON attendance_records (event_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_attendance_member ON attendance_records (member_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_dues_member ON dues_records (member_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions (date);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_sekbid_members_id ON sekbid_members (sekbid_id);`;
+  } catch (idxErr) {
+    console.warn('NeonDB Index Creation Notice:', idxErr);
+  }
+
   console.log('✅ NeonDB tables initialized successfully.');
 }
+

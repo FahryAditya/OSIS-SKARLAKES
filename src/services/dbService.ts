@@ -46,8 +46,10 @@ async function apiFetch<T>(
       },
     });
   } catch (error: any) {
-    if (error?.name === 'AbortError') throw new Error('Koneksi ke server NeonDB timeout (30 detik).');
-    throw new Error('Server API NeonDB tidak dapat dihubungi. Jalankan `npm run dev` untuk mode lokal.');
+    if (error?.name === 'AbortError') {
+      throw new Error('Koneksi ke server NeonDB terputus (Timeout 30 detik). Silakan coba lagi.');
+    }
+    throw new Error('Server API NeonDB tidak dapat dihubungi. Pastikan server backend dev berjalan.');
   } finally {
     window.clearTimeout(timeout);
   }
@@ -55,12 +57,18 @@ async function apiFetch<T>(
   if (!res.ok) {
     const body = await res.text();
     let message = body;
-    try { message = JSON.parse(body).error || body; } catch { /* response bukan JSON */ }
-    throw new Error(message || `HTTP ${res.status}`);
+    try {
+      const parsed = JSON.parse(body);
+      message = parsed.error || parsed.message || body;
+    } catch {
+      /* Response bukan format JSON */
+    }
+    throw new Error(message || `Permintaan gagal (Status HTTP ${res.status})`);
   }
 
   return res.json();
 }
+
 
 // ============================================================
 // FETCH ALL DATA
