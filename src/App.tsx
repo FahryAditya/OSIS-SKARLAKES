@@ -715,7 +715,14 @@ export default function App() {
     showToast('Pengurus Sekbid Ditambahkan', `${newMember.name} ditambahkan ke Sekbid ${newMember.sekbidId}`, 'success');
   };
 
+  const handleBulkAddSekbidMembers = async (newMembers: SekbidMember[]) => {
+    setSekbidMembers(prev => [...prev, ...newMembers]);
+    await bulkSaveSekbidMembers(newMembers);
+    showToast('Import Excel Berhasil', `${newMembers.length} pengurus Sekbid tersimpan ke database NeonDB`, 'success');
+  };
+
   const handleUpdateSekbidMember = (id: string, updated: Partial<SekbidMember>) => {
+
     const existing = sekbidMembers.find(m => m.id === id);
     if (existing) saveSekbidMember({ ...existing, ...updated }).catch(err => {
       console.error('NeonDB update sekbid member failed:', err);
@@ -1055,6 +1062,7 @@ export default function App() {
             members={sekbidMembers}
             config={config}
             onAddMember={handleAddSekbidMember}
+            onBulkImportMembers={handleBulkAddSekbidMembers}
             onUpdateMember={handleUpdateSekbidMember}
             onDeleteMember={handleDeleteSekbidMember}
             onUpdateSekbidDetail={handleUpdateSekbidDetail}
@@ -1063,6 +1071,7 @@ export default function App() {
             isSyncing={isPushingToDb}
           />
         )}
+
 
         {activeTab === 'absensi' && (
           <AttendanceView

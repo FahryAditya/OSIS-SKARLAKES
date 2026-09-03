@@ -616,13 +616,17 @@ async function startServer() {
   // POST /api/db/sekbid-members/bulk
   app.post('/api/db/sekbid-members/bulk', async (req: Request, res: Response) => {
     try {
-      const { members } = req.body;
-      await sql`DELETE FROM sekbid_members`;
+      const members = Array.isArray(req.body?.members) ? req.body.members : [];
       for (const m of members) {
+        if (!m || !m.id || !m.name) continue;
         await sql`
           INSERT INTO sekbid_members (id, sekbid_id, name, nis, role, grade_class, phone, email, avatar_url, status, task_or_focus, joined_period)
-          VALUES (${m.id}, ${m.sekbidId}, ${m.name}, ${m.nis}, ${m.role}, ${m.gradeClass}, ${m.phone}, ${m.email || null}, ${m.avatarUrl || null}, ${m.status}, ${m.taskOrFocus || null}, ${m.joinedPeriod || null})
-          ON CONFLICT (id) DO NOTHING
+          VALUES (${m.id}, ${m.sekbidId || 1}, ${m.name}, ${m.nis || ''}, ${m.role || 'Anggota'}, ${m.gradeClass || ''}, ${m.phone || ''}, ${m.email || null}, ${m.avatarUrl || null}, ${m.status || 'Aktif'}, ${m.taskOrFocus || null}, ${m.joinedPeriod || null})
+          ON CONFLICT (id) DO UPDATE SET
+            sekbid_id = EXCLUDED.sekbid_id, name = EXCLUDED.name, nis = EXCLUDED.nis, role = EXCLUDED.role,
+            grade_class = EXCLUDED.grade_class, phone = EXCLUDED.phone, email = EXCLUDED.email,
+            avatar_url = EXCLUDED.avatar_url, status = EXCLUDED.status,
+            task_or_focus = EXCLUDED.task_or_focus, joined_period = EXCLUDED.joined_period
         `;
       }
       return res.json({ success: true });
@@ -630,6 +634,7 @@ async function startServer() {
       return res.status(500).json({ error: err.message });
     }
   });
+
 
   // DELETE /api/db/sekbid-members/:id
   app.delete('/api/db/sekbid-members/:id', async (req: Request, res: Response) => {

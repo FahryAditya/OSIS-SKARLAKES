@@ -38,12 +38,14 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { SekbidDetail, SekbidMember, SekbidRole, OrganizationConfig } from '../types';
+import { SekbidImportModal } from './SekbidImportModal';
 
 interface SekbidViewProps {
   sekbidList: SekbidDetail[];
   members: SekbidMember[];
   config: OrganizationConfig;
   onAddMember: (member: Omit<SekbidMember, 'id'>) => void;
+  onBulkImportMembers?: (members: SekbidMember[]) => Promise<void>;
   onUpdateMember: (id: string, updated: Partial<SekbidMember>) => void;
   onDeleteMember: (id: string) => void;
   onUpdateSekbid?: (id: number, updated: Partial<SekbidDetail>) => void;
@@ -53,6 +55,7 @@ interface SekbidViewProps {
   onSyncSheets?: () => void;
   isSyncing?: boolean;
 }
+
 
 const ICONS_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
@@ -173,6 +176,7 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   members = [],
   config,
   onAddMember,
+  onBulkImportMembers,
   onUpdateMember,
   onDeleteMember,
   onUpdateSekbid,
@@ -181,6 +185,7 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   onSyncSheets,
   isSyncing = false,
 }) => {
+
   const safeSekbidList = Array.isArray(sekbidList) ? sekbidList : [];
   const safeMembers = Array.isArray(members) ? members : [];
   // Keep the legacy prop working while using the explicit callback name in App.
@@ -229,7 +234,11 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   } | null>(null);
   const [quickMoveMember, setQuickMoveMember] = useState<SekbidMember | null>(null);
 
+  // Import Modal State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
   // Drag and Drop Handlers
+
   const handleDragStart = (e: React.DragEvent, member: SekbidMember) => {
     try {
       e.dataTransfer.setData('text/plain', JSON.stringify(member));
@@ -552,6 +561,18 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
               </button>
             )}
 
+            {onBulkImportMembers && (
+              <button
+                id="btn-import-excel-sekbid"
+                onClick={() => setIsImportModalOpen(true)}
+                className="inline-flex items-center px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                title="Import data pengurus dari file Excel / CSV"
+              >
+                <UploadCloud className="w-4 h-4 mr-1.5" />
+                Import Excel
+              </button>
+            )}
+
             <button
               id="btn-add-sekbid-member-top"
               onClick={() => handleOpenAddMember()}
@@ -560,6 +581,7 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
               <UserPlus className="w-4 h-4 mr-1.5" />
               Tambah Anggota
             </button>
+
           </div>
         </div>
       </div>
@@ -1876,6 +1898,19 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* ================= IMPORT EXCEL MODAL ================= */}
+      {isImportModalOpen && onBulkImportMembers && (
+        <SekbidImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onImport={async (newMembers) => {
+            await onBulkImportMembers(newMembers);
+          }}
+        />
+      )}
     </div>
   );
 };
+
+
