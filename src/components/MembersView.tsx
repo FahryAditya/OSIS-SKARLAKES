@@ -138,7 +138,7 @@ export const MembersView: React.FC<MembersViewProps> = ({
   const [importError, setImportError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Detect corrupted or header row members (e.g. "Nomor WhatsApp (Terpisah)" or contains "nomor whatsapp")
+  // Detect corrupted or header/summary row members (e.g. "Nomor WhatsApp (Terpisah)", summary totals, or major titles)
   const corruptedMembers = useMemo(() => {
     return members.filter(m => {
       const lowerName = (m.name || '').toLowerCase();
@@ -150,6 +150,13 @@ export const MembersView: React.FC<MembersViewProps> = ({
         lowerName.includes('nisn / nim') ||
         lowerName.includes('nama lengkap') ||
         lowerName.includes('nama siswa') ||
+        lowerName.includes('akuntansi dan keuangan') ||
+        lowerName.includes('manajemen perkantoran') ||
+        lowerName.includes('akuntansi komersial') ||
+        lowerName.includes('teknik komputer') ||
+        lowerName.includes('farmasi klinis') ||
+        lowerName.includes('pengembangan perangkat') ||
+        lowerName.includes('desain komunikasi visual') ||
         lowerNim.includes('nomor') ||
         lowerNim.includes('nisn')
       );
@@ -438,8 +445,16 @@ export const MembersView: React.FC<MembersViewProps> = ({
               lowerName.startsWith('total') ||
               lowerName.startsWith('ringkasan') ||
               lowerName.startsWith('daftar anggota') ||
+              lowerName.startsWith('rekap') ||
               lowerName === 'nama' ||
-              lowerName === 'nama siswa'
+              lowerName === 'nama siswa' ||
+              lowerName.includes('akuntansi dan keuangan') ||
+              lowerName.includes('manajemen perkantoran') ||
+              lowerName.includes('akuntansi komersial') ||
+              lowerName.includes('teknik komputer') ||
+              lowerName.includes('farmasi klinis') ||
+              lowerName.includes('pengembangan perangkat') ||
+              lowerName.includes('desain komunikasi visual')
             ) {
               return;
             }
@@ -451,11 +466,23 @@ export const MembersView: React.FC<MembersViewProps> = ({
 
             let finalDivision: Division = 'Sekbid 1 (Keimanan & Ketakwaan)';
             if (rawDivision) {
-              const matched = DIVISIONS.find((d) =>
-                d.toLowerCase().includes(rawDivision.toLowerCase()) ||
-                rawDivision.toLowerCase().includes(d.toLowerCase())
-              );
-              if (matched) finalDivision = matched;
+              const strDiv = rawDivision.trim().toLowerCase();
+              if (strDiv.includes('bph') || strDiv.includes('pengurus harian')) {
+                finalDivision = 'Badan Pengurus Harian (BPH)';
+              } else {
+                const matchSek = strDiv.match(/(?:sekbid|bidang|seksi\s*bidang)?\s*(\d{1,2})/i);
+                if (matchSek && matchSek[1]) {
+                  const num = parseInt(matchSek[1], 10);
+                  if (num >= 1 && num <= 10) {
+                    finalDivision = DIVISIONS[num];
+                  }
+                } else {
+                  const matched = DIVISIONS.find((d) =>
+                    d.toLowerCase().includes(strDiv) || strDiv.includes(d.toLowerCase())
+                  );
+                  if (matched) finalDivision = matched;
+                }
+              }
             }
 
             let finalRole: Role = 'Anggota Aktif';
