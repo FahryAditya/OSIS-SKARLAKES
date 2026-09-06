@@ -427,6 +427,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div>
+              <label className="block font-semibold text-slate-700 mb-1">Jumlah Minggu per Bulan (Default: 4 Minggu)</label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={formData.weeksPerMonth || 4}
+                onChange={(e) => setFormData({ ...formData, weeksPerMonth: parseInt(e.target.value, 10) || 4 })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold"
+              />
+              <p className="text-2xs text-slate-400 mt-1">Mengatur jumlah minggu dalam 1 bulan iuran kas. Anggota dapat membayar 1, 2, 3, atau 4 minggu secara fleksibel.</p>
+            </div>
+
+            <div>
               <label className="block font-semibold text-slate-700 mb-1">Bulan Mulai Pembayaran Iuran *</label>
               <select
                 value={formData.duesStartMonth || 8}

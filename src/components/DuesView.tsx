@@ -741,6 +741,67 @@ export const DuesView: React.FC<DuesViewProps> = ({
                       );
                     })}
                   </div>
+
+                  {/* Quick Preset Buttons for 1, 2, 3, 4 Weeks */}
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    <span className="w-full text-3xs font-semibold text-slate-500">Pilihan Cepat (Bayar Bebas):</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWeeks([1]);
+                        setCustomAmountInput(weeklyDue * 1);
+                      }}
+                      className={`px-2 py-1 text-2xs font-bold rounded-lg border transition-colors ${
+                        selectedWeeks.length === 1 && selectedWeeks[0] === 1
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                      }`}
+                    >
+                      1 Minggu ({formatRupiah(weeklyDue * 1)})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWeeks([1, 2]);
+                        setCustomAmountInput(weeklyDue * 2);
+                      }}
+                      className={`px-2 py-1 text-2xs font-bold rounded-lg border transition-colors ${
+                        selectedWeeks.length === 2 && selectedWeeks.includes(1) && selectedWeeks.includes(2)
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                      }`}
+                    >
+                      2 Minggu ({formatRupiah(weeklyDue * 2)})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWeeks([1, 2, 3]);
+                        setCustomAmountInput(weeklyDue * 3);
+                      }}
+                      className={`px-2 py-1 text-2xs font-bold rounded-lg border transition-colors ${
+                        selectedWeeks.length === 3 && selectedWeeks.includes(3)
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                      }`}
+                    >
+                      3 Minggu ({formatRupiah(weeklyDue * 3)})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWeeks([1, 2, 3, 4]);
+                        setCustomAmountInput(weeklyDue * 4);
+                      }}
+                      className={`px-2 py-1 text-2xs font-bold rounded-lg border transition-colors ${
+                        selectedWeeks.length === 4
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                      }`}
+                    >
+                      4 Mgg / Full ({formatRupiah(weeklyDue * 4)})
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div>
