@@ -986,9 +986,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-indigo-500 selection:text-white">
       
-      {/* Left Sidebar Navigation */}
+      {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -1004,7 +1004,7 @@ export default function App() {
       />
 
       {/* Main App Content View Container */}
-      <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-12 overflow-y-auto">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-24 sm:pb-12">
         <ErrorBoundary>
         
         {activeTab === 'dashboard' && (
