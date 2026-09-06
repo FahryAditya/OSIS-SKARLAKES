@@ -404,26 +404,27 @@ export default function App() {
           updatedDuesRecords.push(newRecord);
         });
 
-        // Check if all 4 weeks are now lunas for this month
+        // Check if all weeks are now lunas for this month
+        const targetWeeks = config.weeksPerMonth || 4;
         let paidWeeksCount = 0;
-        for (let w = 1; w <= 4; w++) {
+        for (let w = 1; w <= targetWeeks; w++) {
           if (existing.some(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && rec.week === w && rec.status === 'lunas')) {
             paidWeeksCount++;
           }
         }
-        if (paidWeeksCount >= 4) {
+        if (paidWeeksCount >= targetWeeks) {
           const mIdx = existing.findIndex(rec => rec.memberId === memberId && rec.year === 2026 && rec.month === m && (!rec.week || rec.week === 0));
           const monthRecord: MonthlyDuesRecord = {
             id: mIdx >= 0 ? existing[mIdx].id : `due-${memberId}-2026-${m}-${Date.now()}`,
             memberId,
             year: 2026,
             month: m,
-            amount: config.defaultMonthlyDue || 10000,
+            amount: config.defaultMonthlyDue || (config.defaultWeeklyDue ? config.defaultWeeklyDue * targetWeeks : 10000),
             status: 'lunas',
             paymentDate: todayStr,
             paymentMethod,
             receiptNumber: receiptNum,
-            notes: `Lunas 4 Minggu - ${label}`,
+            notes: `Lunas ${targetWeeks} Minggu - ${label}`,
           };
           if (mIdx >= 0) {
             existing[mIdx] = monthRecord;
