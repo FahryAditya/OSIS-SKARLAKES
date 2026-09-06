@@ -348,102 +348,165 @@ export const MembersView: React.FC<MembersViewProps> = ({
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        if (!sheetName) {
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
           setImportError('File Excel tidak memiliki lembar kerja (worksheet).');
           return;
         }
 
-        const sheet = workbook.Sheets[sheetName];
-        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-        if (!rows || rows.length === 0) {
-          setImportError('File Excel kosong atau tidak memiliki baris data.');
-          return;
-        }
-
         const parsed: ParsedImportMember[] = [];
+        let totalExtractedRows = 0;
 
-        rows.forEach((row, index) => {
-          // Normalize object keys to lowercase trimmed
-          const normalized: Record<string, string> = {};
-          Object.keys(row).forEach((k) => {
-            normalized[k.trim().toLowerCase()] = String(row[k]).trim();
-          });
+        workbook.SheetNames.forEach((sheetName) => {
+          const sheet = workbook.Sheets[sheetName];
+          if (!sheet) return;
 
-          // Helper to find value from possible key synonyms
-          const findKey = (keys: string[]) => {
-            for (const key of keys) {
-              if (normalized[key]) return normalized[key];
+          // Convert sheet to 2D array matrix to locate header row dynamically
+          const matrix: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+          if (!matrix || matrix.length === 0) return;
+
+          // Find header row index by scanning for key column names
+          let headerRowIdx = -1;
+          for (let i = 0; i < matrix.length; i++) {
+            const rowStr = matrix[i].map((c) => String(c).toLowerCase()).join(' ');
+            if (
+              rowStr.includes('nama') ||
+              rowStr.includes('nama lengkap') ||
+              rowStr.includes('nama siswa') ||
+              rowStr.includes('nama anggota') ||
+              rowStr.includes('full name')
+            ) {
+              headerRowIdx = i;
+              break;
             }
-            return '';
-          };
-
-          const rawName = findKey(['nama lengkap', 'nama siswa', 'nama', 'name', 'full name', 'nama_lengkap', 'nama anggota']);
-          const rawKelas = findKey(['kelas', 'kelas siswa', 'tingkat', 'rombel', 'class', 'jurusan', 'grade']);
-          const rawPhone = findKey(['nomor whatsapp', 'no. whatsapp', 'no whatsapp', 'whatsapp', 'no wa', 'wa', 'telepon', 'nomor telepon', 'no hp', 'phone', 'hp', 'handphone']);
-          const rawNim = findKey(['nisn / nim', 'nisn', 'nim', 'nis', 'nomor induk', 'no. induk', 'no induk', 'id anggota']);
-          const rawDivision = findKey(['divisi', 'sekbid', 'seksi bidang', 'bidang', 'division', 'departemen']);
-          const rawRole = findKey(['jabatan', 'role', 'posisi', 'status jabatan']);
-          const rawEmail = findKey(['email', 'surel', 'e-mail', 'alamat email']);
-
-          const lowerName = (rawName || '').toLowerCase();
-          
-          // Skip header row if imported as data
-          if (
-            lowerName.includes('nomor whatsapp') || 
-            lowerName.includes('terpisah') || 
-            lowerName.includes('nama lengkap') ||
-            lowerName.includes('nisn / nim')
-          ) {
-            return;
           }
 
-          const isValid = Boolean(rawName && rawName.length >= 2);
-          const errorMessage = !rawName ? 'Nama siswa tidak boleh kosong' : undefined;
-
-          // Match closest division or default
-          let finalDivision: Division = 'Sekbid 1 (Keimanan & Ketakwaan)';
-          if (rawDivision) {
-            const matched = DIVISIONS.find(d => 
-              d.toLowerCase().includes(rawDivision.toLowerCase()) || 
-              rawDivision.toLowerCase().includes(d.toLowerCase())
-            );
-            if (matched) finalDivision = matched;
+          // Fallback check if no 'nama' keyword, but has 'kelas' or 'whatsapp'
+          if (headerRowIdx === -1) {
+            for (let i = 0; i < matrix.length; i++) {
+              const rowStr = matrix[i].map((c) => String(c).toLowerCase()).join(' ');
+              if (rowStr.includes('kelas') || rowStr.includes('whatsapp') || rowStr.includes('nisn')) {
+                headerRowIdx = i;
+                break;
+              }
+            }
           }
 
-          // Match closest role or default
-          let finalRole: Role = 'Anggota Aktif';
-          if (rawRole) {
-            const matchedRole = ROLES.find(r => 
-              r.toLowerCase().includes(rawRole.toLowerCase()) ||
-              rawRole.toLowerCase().includes(r.toLowerCase())
-            );
-            if (matchedRole) finalRole = matchedRole;
+          if (headerRowIdx === -1) {
+            headerRowIdx = 0;
           }
 
-          // Format phone number
-          let cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
-          if (cleanPhone.startsWith('62')) cleanPhone = '0' + cleanPhone.slice(2);
-          if (cleanPhone.startsWith('+62')) cleanPhone = '0' + cleanPhone.slice(3);
-          if (!cleanPhone) cleanPhone = '081200000000';
+          const headerRow = matrix[headerRowIdx].map((c) => String(c).trim().toLowerCase());
+          const dataRows = matrix.slice(headerRowIdx + 1);
 
-          const finalNim = rawNim || `${2311000 + index + 1}`;
-          const finalKelas = rawKelas || 'X';
-          const finalEmail = rawEmail || `${rawName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'siswa'}@student.sch.id`;
+          dataRows.forEach((rowArray) => {
+            const normalized: Record<string, string> = {};
+            headerRow.forEach((h, colIdx) => {
+              if (h && colIdx < rowArray.length) {
+                normalized[h] = String(rowArray[colIdx]).trim();
+              }
+            });
 
-          parsed.push({
-            name: rawName || `Siswa ${index + 1}`,
-            kelas: finalKelas,
-            phone: cleanPhone,
-            nim: finalNim,
-            division: finalDivision,
-            role: finalRole,
-            email: finalEmail,
-            isValid,
-            errorMessage,
+            const findKey = (keys: string[]) => {
+              for (const key of keys) {
+                if (normalized[key]) return normalized[key];
+                for (const actualKey of Object.keys(normalized)) {
+                  if (actualKey.includes(key) && normalized[actualKey]) {
+                    return normalized[actualKey];
+                  }
+                }
+              }
+              return '';
+            };
+
+            const rawName = findKey(['nama lengkap', 'nama siswa', 'nama', 'name', 'full name', 'nama_lengkap', 'nama anggota']);
+            const rawKelas = findKey(['kelas', 'kelas terakhir', 'kelas siswa', 'tingkat', 'rombel', 'class', 'jurusan', 'grade', 'kelas asal']);
+            const rawPhone = findKey(['nomor whatsapp', 'no. whatsapp', 'no whatsapp', 'whatsapp', 'no wa', 'wa', 'telepon', 'nomor telepon', 'no hp', 'phone', 'hp', 'handphone']);
+            const rawNim = findKey(['nisn / nim', 'nisn', 'nim', 'nis', 'nomor induk', 'no. induk', 'no induk', 'id anggota']);
+            const rawDivision = findKey(['divisi', 'sekbid', 'seksi bidang', 'bidang', 'division', 'departemen']);
+            const rawRole = findKey(['jabatan', 'jabatan terakhir', 'role', 'posisi', 'status jabatan']);
+            const rawEmail = findKey(['email', 'surel', 'e-mail', 'alamat email']);
+
+            const lowerName = (rawName || '').toLowerCase();
+
+            // Skip invalid/header/summary rows
+            if (
+              !rawName ||
+              lowerName.includes('nomor whatsapp') ||
+              lowerName.includes('terpisah') ||
+              lowerName.includes('nama lengkap') ||
+              lowerName.includes('nisn / nim') ||
+              lowerName.startsWith('total') ||
+              lowerName.startsWith('ringkasan') ||
+              lowerName.startsWith('daftar anggota') ||
+              lowerName === 'nama' ||
+              lowerName === 'nama siswa'
+            ) {
+              return;
+            }
+
+            totalExtractedRows++;
+
+            const isValid = Boolean(rawName && rawName.length >= 2);
+            const errorMessage = !isValid ? 'Nama siswa tidak boleh kosong' : undefined;
+
+            let finalDivision: Division = 'Sekbid 1 (Keimanan & Ketakwaan)';
+            if (rawDivision) {
+              const matched = DIVISIONS.find((d) =>
+                d.toLowerCase().includes(rawDivision.toLowerCase()) ||
+                rawDivision.toLowerCase().includes(d.toLowerCase())
+              );
+              if (matched) finalDivision = matched;
+            }
+
+            let finalRole: Role = 'Anggota Aktif';
+            if (rawRole) {
+              const matchedRole = ROLES.find((r) =>
+                r.toLowerCase().includes(rawRole.toLowerCase()) ||
+                rawRole.toLowerCase().includes(r.toLowerCase())
+              );
+              if (matchedRole) {
+                finalRole = matchedRole;
+              } else if (rawRole.toLowerCase().includes('ketua')) {
+                finalRole = 'Ketua Umum';
+              } else if (rawRole.toLowerCase().includes('wakil')) {
+                finalRole = 'Wakil Ketua';
+              } else if (rawRole.toLowerCase().includes('sekretaris')) {
+                finalRole = 'Sekretaris 1';
+              } else if (rawRole.toLowerCase().includes('bendahara')) {
+                finalRole = 'Bendahara 1';
+              } else if (rawRole.toLowerCase().includes('koordinator')) {
+                finalRole = 'Koordinator Divisi';
+              } else if (rawRole.toLowerCase().includes('staf')) {
+                finalRole = 'Staf Ahli';
+              }
+            }
+
+            let cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
+            if (cleanPhone.startsWith('62')) cleanPhone = '0' + cleanPhone.slice(2);
+            if (cleanPhone.startsWith('+62')) cleanPhone = '0' + cleanPhone.slice(3);
+            if (!cleanPhone) cleanPhone = '081200000000';
+
+            const finalNim = (rawNim && rawNim !== rawName) ? rawNim : `${2311000 + totalExtractedRows}`;
+            const finalKelas = rawKelas || 'X';
+            const finalEmail = rawEmail || `${rawName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'siswa'}@student.sch.id`;
+
+            parsed.push({
+              name: rawName,
+              kelas: finalKelas,
+              phone: cleanPhone,
+              nim: finalNim,
+              division: finalDivision,
+              role: finalRole,
+              email: finalEmail,
+              isValid,
+              errorMessage,
+            });
           });
         });
+
+        if (parsed.length === 0) {
+          setImportError('File Excel tidak memiliki baris data anggota yang valid.');
+        }
 
         setParsedData(parsed);
       } catch (err: any) {

@@ -25,7 +25,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
-    if (this.state.hasError) {
+    const { hasError, error } = this.state;
+    if (hasError) {
       return (
         <div className="p-8 max-w-2xl mx-auto my-12 bg-white rounded-2xl border border-rose-200 shadow-lg text-center space-y-4">
           <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -33,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
           <h2 className="text-xl font-black text-slate-900">Terjadi Kesalahan Tampilan Halaman</h2>
           <p className="text-xs text-slate-600 font-mono bg-slate-50 p-3 rounded-xl border border-slate-200 text-left overflow-x-auto">
-            {this.state.error?.message || 'Gagal memuat tampilan komponen.'}
+            {error?.message || 'Gagal memuat tampilan komponen.'}
           </p>
           <button
             onClick={() => window.location.reload()}
@@ -46,6 +47,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children || null;
+    return (this as any).props?.children || null;
   }
 }

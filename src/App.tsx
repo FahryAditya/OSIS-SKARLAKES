@@ -685,6 +685,41 @@ export default function App() {
     showToast('Pengurus Sekbid Dihapus', 'Data anggota sekbid dihapus', 'info');
   };
 
+  const handleBulkImportSekbidMembers = (
+    newMembers: Omit<SekbidMember, 'id'>[],
+    updates: { id: string; updated: Partial<SekbidMember> }[]
+  ) => {
+    setSekbidMembers(prev => {
+      let next = [...prev];
+      updates.forEach(({ id, updated }) => {
+        next = next.map(m => (m.id === id ? { ...m, ...updated } : m));
+      });
+      const baseTime = Date.now();
+      const created: SekbidMember[] = newMembers.map((m, idx) => ({
+        ...m,
+        id: `sm-${baseTime}-${idx}`,
+      }));
+      next = [...next, ...created];
+
+      bulkSaveSekbidMembers(next).catch(err => {
+        console.error('NeonDB bulk save sekbid members failed:', err);
+        showToast('Gagal Menyimpan Pengurus', err.message || 'Data pengurus sekbid belum tersimpan ke NeonDB', 'error');
+      });
+
+      return next;
+    });
+
+    triggerActionFeedback(
+      'Import Excel Sekbid Berhasil!',
+      `${updates.length} pengurus diperbarui urutan Sekbid-nya, ${newMembers.length} pengurus baru ditambahkan.`,
+      {
+        type: 'celebrate',
+        withConfetti: true,
+        badge: 'Import Excel Sekbid',
+      }
+    );
+  };
+
   const handleUpdateSekbidDetail = (id: number, updated: Partial<SekbidDetail>) => {
     const nextSekbidList = sekbidList.map(s => s.id === id ? { ...s, ...updated } : s);
     setSekbidList(nextSekbidList);
@@ -1010,6 +1045,7 @@ export default function App() {
             onAddMember={handleAddSekbidMember}
             onUpdateMember={handleUpdateSekbidMember}
             onDeleteMember={handleDeleteSekbidMember}
+            onBulkImportMembers={handleBulkImportSekbidMembers}
             onUpdateSekbidDetail={handleUpdateSekbidDetail}
             onResetData={handleResetSekbidData}
             onSyncSheets={handleSyncToDb}

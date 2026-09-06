@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -35,8 +35,14 @@ import {
   ArrowRightLeft,
   MoveRight,
   UploadCloud,
-  RefreshCw
+  RefreshCw,
+  FileSpreadsheet,
+  Upload,
+  AlertCircle,
+  FileCheck,
+  AlertTriangle
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { SekbidDetail, SekbidMember, SekbidRole, OrganizationConfig } from '../types';
 
 interface SekbidViewProps {
@@ -46,6 +52,10 @@ interface SekbidViewProps {
   onAddMember: (member: Omit<SekbidMember, 'id'>) => void;
   onUpdateMember: (id: string, updated: Partial<SekbidMember>) => void;
   onDeleteMember: (id: string) => void;
+  onBulkImportMembers?: (
+    newMembers: Omit<SekbidMember, 'id'>[],
+    updates: { id: string; updated: Partial<SekbidMember> }[]
+  ) => void;
   onUpdateSekbid?: (id: number, updated: Partial<SekbidDetail>) => void;
   onUpdateSekbidDetail?: (id: number, updated: Partial<SekbidDetail>) => void;
   onResetData?: () => void;
@@ -168,6 +178,45 @@ const THEME_STYLES: Record<string, {
   },
 };
 
+interface ParsedImportSekbidMember {
+  name: string;
+  gradeClass: string;
+  sekbidId: number;
+  role: SekbidRole;
+  nis: string;
+  phone: string;
+  email?: string;
+  isValid: boolean;
+  errorMessage?: string;
+  isExisting: boolean;
+  existingId?: string;
+}
+
+const parseSekbidNumber = (raw: any): number => {
+  if (raw === null || raw === undefined) return 1;
+  const str = String(raw).trim().toLowerCase();
+  if (!str) return 1;
+
+  const match = str.match(/(?:sekbid|bidang|seksi\s*bidang)?\s*(\d{1,2})/i);
+  if (match && match[1]) {
+    const num = parseInt(match[1], 10);
+    if (num >= 1 && num <= 10) return num;
+  }
+
+  if (str.includes('keimanan') || str.includes('ketakwaan')) return 1;
+  if (str.includes('budi pekerti') || str.includes('akhlak')) return 2;
+  if (str.includes('bela negara') || str.includes('wawasan')) return 3;
+  if (str.includes('akademik') || str.includes('seni') || str.includes('olahraga')) return 4;
+  if (str.includes('demokrasi') || str.includes('lingkungan')) return 5;
+  if (str.includes('kreativitas') || str.includes('kewirausahaan') || str.includes('danus')) return 6;
+  if (str.includes('kesehatan') || str.includes('gizi')) return 7;
+  if (str.includes('sastra') || str.includes('budaya')) return 8;
+  if (str.includes('tik') || str.includes('publikasi') || str.includes('media')) return 9;
+  if (str.includes('komunikasi') || str.includes('bahasa')) return 10;
+
+  return 1;
+};
+
 export const SekbidView: React.FC<SekbidViewProps> = ({
   sekbidList = [],
   members = [],
@@ -175,6 +224,7 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   onAddMember,
   onUpdateMember,
   onDeleteMember,
+  onBulkImportMembers,
   onUpdateSekbid,
   onUpdateSekbidDetail,
   onResetSekbidData,
@@ -185,6 +235,276 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
   const safeMembers = Array.isArray(members) ? members : [];
   // Keep the legacy prop working while using the explicit callback name in App.
   const updateSekbidDetail = onUpdateSekbidDetail || onUpdateSekbid;
+
+  // Import Excel State for 10 Sekbid
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [parsedData, setParsedData] = useState<ParsedImportSekbidMember[]>([]);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Download Excel Template for Sekbid
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Nama Lengkap': 'Ahmad Fauzi',
+        'Kelas': 'XI MIPA 1',
+        'Sekbid': '1',
+        'Jabatan': 'Ketua Sekbid',
+        'NIS / NISN': '2311501001',
+        'No. WhatsApp': '081234567891'
+      },
+      {
+        'Nama Lengkap': 'Siti Nurhaliza',
+        'Kelas': 'XI IPS 2',
+        'Sekbid': 'Sekbid 2',
+        'Jabatan': 'Wakil Ketua Sekbid',
+        'NIS / NISN': '2311501002',
+        'No. WhatsApp': '085712345678'
+      },
+      {
+        'Nama Lengkap': 'Rizky Pratama',
+        'Kelas': 'X MIPA 3',
+        'Sekbid': '10',
+        'Jabatan': 'Anggota',
+        'NIS / NISN': '2311501003',
+        'No. WhatsApp': '087899887766'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    ws['!cols'] = [
+      { wch: 24 }, // Nama
+      { wch: 14 }, // Kelas
+      { wch: 18 }, // Sekbid
+      { wch: 20 }, // Jabatan
+      { wch: 16 }, // NIS
+      { wch: 18 }  // WhatsApp
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Pengurus Sekbid');
+    XLSX.writeFile(wb, 'Template_Data_Pengurus_Sekbid.xlsx');
+  };
+
+  const processFile = (file: File) => {
+    setImportError(null);
+    setImportFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+          setImportError('File Excel tidak memiliki lembar kerja (worksheet).');
+          return;
+        }
+
+        const parsed: ParsedImportSekbidMember[] = [];
+        let totalExtractedRows = 0;
+
+        workbook.SheetNames.forEach((sheetName) => {
+          const sheet = workbook.Sheets[sheetName];
+          if (!sheet) return;
+
+          const matrix: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+          if (!matrix || matrix.length === 0) return;
+
+          let headerRowIdx = -1;
+          for (let i = 0; i < matrix.length; i++) {
+            const rowStr = matrix[i].map((c) => String(c).toLowerCase()).join(' ');
+            if (
+              rowStr.includes('nama') ||
+              rowStr.includes('nama lengkap') ||
+              rowStr.includes('nama siswa') ||
+              rowStr.includes('nama pengurus') ||
+              rowStr.includes('full name')
+            ) {
+              headerRowIdx = i;
+              break;
+            }
+          }
+
+          if (headerRowIdx === -1) {
+            for (let i = 0; i < matrix.length; i++) {
+              const rowStr = matrix[i].map((c) => String(c).toLowerCase()).join(' ');
+              if (rowStr.includes('kelas') || rowStr.includes('sekbid') || rowStr.includes('jabatan')) {
+                headerRowIdx = i;
+                break;
+              }
+            }
+          }
+
+          if (headerRowIdx === -1) headerRowIdx = 0;
+
+          const headerRow = matrix[headerRowIdx].map((c) => String(c).trim().toLowerCase());
+          const dataRows = matrix.slice(headerRowIdx + 1);
+
+          dataRows.forEach((rowArray) => {
+            const normalized: Record<string, string> = {};
+            headerRow.forEach((h, colIdx) => {
+              if (h && colIdx < rowArray.length) {
+                normalized[h] = String(rowArray[colIdx]).trim();
+              }
+            });
+
+            const findKey = (keys: string[]) => {
+              for (const key of keys) {
+                if (normalized[key]) return normalized[key];
+                for (const actualKey of Object.keys(normalized)) {
+                  if (actualKey.includes(key) && normalized[actualKey]) {
+                    return normalized[actualKey];
+                  }
+                }
+              }
+              return '';
+            };
+
+            const rawName = findKey(['nama lengkap', 'nama pengurus', 'nama siswa', 'nama', 'name', 'full name', 'nama_lengkap']);
+            const rawKelas = findKey(['kelas', 'kelas pengurus', 'kelas siswa', 'tingkat', 'rombel', 'class', 'grade']);
+            const rawSekbid = findKey(['sekbid (1-10)', 'sekbid 1-10', 'sekbid', 'seksi bidang', 'bidang', 'divisi', 'division', 'sekbid_id']);
+            const rawRole = findKey(['jabatan', 'jabatan sekbid', 'role', 'posisi']);
+            const rawNis = findKey(['nis / nisn', 'nisn', 'nis', 'nim', 'no. induk', 'no induk']);
+            const rawPhone = findKey(['no. whatsapp', 'nomor whatsapp', 'no whatsapp', 'whatsapp', 'no wa', 'wa', 'telepon', 'phone']);
+            const rawEmail = findKey(['email', 'surel', 'e-mail']);
+
+            const lowerName = (rawName || '').toLowerCase();
+
+            if (
+              !rawName ||
+              lowerName.includes('nama lengkap') ||
+              lowerName.includes('nomor whatsapp') ||
+              lowerName.startsWith('total') ||
+              lowerName.startsWith('ringkasan') ||
+              lowerName === 'nama'
+            ) {
+              return;
+            }
+
+            totalExtractedRows++;
+
+            const isValid = Boolean(rawName && rawName.length >= 2);
+            const errorMessage = !isValid ? 'Nama pengurus tidak boleh kosong' : undefined;
+
+            const parsedSekbidId = parseSekbidNumber(rawSekbid);
+
+            let parsedRole: SekbidRole = 'Anggota';
+            if (rawRole) {
+              const rLower = rawRole.toLowerCase();
+              if (rLower.includes('ketua') && !rLower.includes('wakil')) {
+                parsedRole = 'Ketua Sekbid';
+              } else if (rLower.includes('wakil')) {
+                parsedRole = 'Wakil Ketua Sekbid';
+              } else {
+                parsedRole = 'Anggota';
+              }
+            }
+
+            let cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
+            if (cleanPhone.startsWith('62')) cleanPhone = '0' + cleanPhone.slice(2);
+            if (cleanPhone.startsWith('+62')) cleanPhone = '0' + cleanPhone.slice(3);
+            if (!cleanPhone) cleanPhone = '081200000000';
+
+            const finalNis = rawNis || `${2311000 + totalExtractedRows}`;
+            const finalKelas = rawKelas || 'X';
+
+            // Match against existing members by trimmed case-insensitive name
+            const existing = safeMembers.find(
+              (m) => m.name.trim().toLowerCase() === rawName.trim().toLowerCase()
+            );
+
+            parsed.push({
+              name: rawName,
+              gradeClass: finalKelas,
+              sekbidId: parsedSekbidId,
+              role: parsedRole,
+              nis: finalNis,
+              phone: cleanPhone,
+              email: rawEmail || undefined,
+              isValid,
+              errorMessage,
+              isExisting: Boolean(existing),
+              existingId: existing?.id,
+            });
+          });
+        });
+
+        if (parsed.length === 0) {
+          setImportError('File Excel tidak memiliki data pengurus sekbid yang valid.');
+        }
+
+        setParsedData(parsed);
+      } catch (err: any) {
+        console.error(err);
+        setImportError(`Gagal membaca file: ${err?.message || 'Format tidak didukung'}`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleConfirmImport = () => {
+    const validRows = parsedData.filter((d) => d.isValid);
+    if (validRows.length === 0) {
+      setImportError('Tidak ada data pengurus valid yang dapat diimpor.');
+      return;
+    }
+
+    const updates: { id: string; updated: Partial<SekbidMember> }[] = [];
+    const newMembers: Omit<SekbidMember, 'id'>[] = [];
+
+    validRows.forEach((row) => {
+      if (row.isExisting && row.existingId) {
+        updates.push({
+          id: row.existingId,
+          updated: {
+            sekbidId: row.sekbidId,
+            gradeClass: row.gradeClass,
+            role: row.role,
+            ...(row.phone !== '081200000000' ? { phone: row.phone } : {}),
+          },
+        });
+      } else {
+        newMembers.push({
+          name: row.name,
+          gradeClass: row.gradeClass,
+          sekbidId: row.sekbidId,
+          role: row.role,
+          nis: row.nis,
+          phone: row.phone,
+          email: row.email,
+          status: 'Aktif',
+          joinedPeriod: config.period || '2025/2026',
+        });
+      }
+    });
+
+    if (onBulkImportMembers) {
+      onBulkImportMembers(newMembers, updates);
+    } else {
+      updates.forEach((u) => onUpdateMember(u.id, u.updated));
+      newMembers.forEach((m) => onAddMember(m));
+    }
+
+    setIsImportModalOpen(false);
+    setParsedData([]);
+    setImportFileName(null);
+  };
   // Navigation / Filter State
   const [selectedSekbidId, setSelectedSekbidId] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -521,6 +841,21 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
               Export CSV
+            </button>
+
+            <button
+              id="btn-import-excel-sekbid"
+              onClick={() => {
+                setParsedData([]);
+                setImportFileName(null);
+                setImportError(null);
+                setIsImportModalOpen(true);
+              }}
+              className="inline-flex items-center px-3 py-2 border border-emerald-300 rounded-lg text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 shadow-2xs transition-colors"
+              title="Import Data Excel Pengurus 10 Sekbid"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+              Import Excel
             </button>
 
             <button
@@ -1821,6 +2156,199 @@ export const SekbidView: React.FC<SekbidViewProps> = ({
                   Tutup
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL IMPORT EXCEL 10 SEKBID ================= */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header Modal */}
+            <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl">
+                  <FileSpreadsheet className="w-6 h-6 text-emerald-100" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Import Data Pengurus 10 Sekbid OSIS</h3>
+                  <p className="text-xs text-emerald-100 mt-0.5">
+                    Unggah file Excel/CSV dengan kolom NAMA, KELAS, dan SEKBID (1-10) untuk update posisi sekbid atau tambah pengurus.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Info Banner & Template Download */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                <div className="flex items-start space-x-3">
+                  <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-slate-700">
+                    <p className="font-bold text-emerald-900">Auto-Recognition & Smart Upsert (Tanpa Duplikasi)</p>
+                    <p className="mt-0.5 text-slate-600">
+                      Sistem mendeteksi otomatis kolom <strong>NAMA</strong>, <strong>KELAS</strong>, dan <strong>SEKBID (1 s.d. 10)</strong>. Pengurus yang sudah ada akan diperbarui urutan Sekbid-nya tanpa menumpuk/menduplikasi data.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="px-3.5 py-2 bg-white hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-300 shadow-2xs flex items-center space-x-1.5 shrink-0 transition-colors"
+                >
+                  <Download className="w-4 h-4 text-emerald-600" />
+                  <span>Unduh Template Excel</span>
+                </button>
+              </div>
+
+              {/* Upload Dropzone */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".xlsx, .xls, .csv"
+                className="hidden"
+              />
+
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? 'border-emerald-500 bg-emerald-50/50 scale-[0.99]'
+                    : 'border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/20'
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="p-3 bg-emerald-100 text-emerald-700 rounded-full">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">
+                      {importFileName ? importFileName : 'Klik atau seret file Excel / CSV ke sini'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Format yang didukung: .XLSX, .XLS, .CSV (Maksimal 10MB)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {importError && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-2 text-xs text-rose-700">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{importError}</span>
+                </div>
+              )}
+
+              {/* Preview Parsed Data */}
+              {parsedData.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-100 p-3 rounded-xl border border-slate-200">
+                    <div className="flex items-center space-x-2">
+                      <FileCheck className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-bold text-slate-800">
+                        Hasil Pembacaan File ({parsedData.length} Baris Data)
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-[11px]">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 font-semibold rounded-full border border-blue-200">
+                        🔄 {parsedData.filter(d => d.isValid && d.isExisting).length} Diperbarui Sekbid-nya
+                      </span>
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-semibold rounded-full border border-emerald-200">
+                        ➕ {parsedData.filter(d => d.isValid && !d.isExisting).length} Pengurus Baru
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 sticky top-0">
+                        <tr>
+                          <th className="p-2.5">No</th>
+                          <th className="p-2.5">Nama Pengurus</th>
+                          <th className="p-2.5">Kelas</th>
+                          <th className="p-2.5">Sekbid Tujuan</th>
+                          <th className="p-2.5">Jabatan</th>
+                          <th className="p-2.5">Status Import</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {parsedData.map((row, idx) => {
+                          const sekbidObj = sekbidList.find(s => s.id === row.sekbidId);
+                          return (
+                            <tr key={idx} className={!row.isValid ? 'bg-rose-50/50' : row.isExisting ? 'bg-blue-50/30' : ''}>
+                              <td className="p-2.5 font-mono text-slate-500">{idx + 1}</td>
+                              <td className="p-2.5 font-bold text-slate-900">{row.name}</td>
+                              <td className="p-2.5 text-slate-700">{row.gradeClass}</td>
+                              <td className="p-2.5">
+                                <span className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-slate-100 text-slate-800 border border-slate-200">
+                                  Sekbid {row.sekbidId} {sekbidObj ? `(${sekbidObj.shortTitle})` : ''}
+                                </span>
+                              </td>
+                              <td className="p-2.5 text-slate-700">{row.role}</td>
+                              <td className="p-2.5">
+                                {!row.isValid ? (
+                                  <span className="text-rose-600 font-bold text-[11px] flex items-center space-x-1">
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    <span>Invalid</span>
+                                  </span>
+                                ) : row.isExisting ? (
+                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-full">
+                                    🔄 Update Sekbid
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                                    ➕ Tambah Baru
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Modal Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setParsedData([]);
+                  setImportFileName(null);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={parsedData.filter(d => d.isValid).length === 0}
+                onClick={handleConfirmImport}
+                className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs flex items-center space-x-1.5 disabled:opacity-50 transition-colors"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Konfirmasi Import ({parsedData.filter(d => d.isValid).length} Data)</span>
+              </button>
             </div>
           </div>
         </div>
